@@ -1,0 +1,10 @@
+branch_protection:
+  policies:
+    ## Запрет переписывания истории коммитов, внесения правок без
+    ## предложения изменений, а также удаления основной ветки
+    - target: default_branch
+      message: "Direct push into main branch is forbidden, create PR first"
+      rules:
+        - prevent_force_push
+        - prevent_non_pr_changes
+        - prevent_deletion
