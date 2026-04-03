@@ -1,17 +1,27 @@
-import express from 'express'
-import helmet from 'helmet'
-import cors from 'cors'
-import { prisma } from './utils/prisma.js'
+import express from "express";
+import helmet from "helmet";
+import cors from "cors";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger.js";
+import stepRoutes from "./routes/step.routes.js";
+import submissionRoutes from "./routes/submission.routes.js";
 
+const app = express();
 
-const app = express()
+app.use(cors());
+app.use(helmet());
+app.use(express.json());
 
-app.use(cors())
-app.use(helmet())
-app.use(express.json())
+// Swagger UI (SaaS style)
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.get('/test-db', async (req, res) => {
-  const steps = await prisma.step.findMany()
-  res.json(steps)
-})
-export default app
+// routes
+app.use("/api/steps", stepRoutes);
+app.use("/api/submissions", submissionRoutes);
+
+// healthcheck
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+export default app;
