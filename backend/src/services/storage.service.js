@@ -1,6 +1,6 @@
 import { supabase } from "../config/supabase.js";
 
-const BUCKET = "quiz-images";
+const BUCKET = "Rendermood";
 
 export async function uploadImage(file) {
   const fileName = `${Date.now()}-${file.originalname}`;
