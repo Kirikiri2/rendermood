@@ -34,17 +34,18 @@ export const sendLeadToBitrix = async ({ name, phone, email, comment, answers })
 
     const createdAt = new Date().toLocaleString("ru-RU");
 
+    // 🧠 отдельное поле ANSWERS (чистый список)
+    const answersText = formattedAnswers.join("\n");
+
+    // 🧠 COMMENTS теперь только про клиента + мета
     const comments = `
 📅 Дата заявки: ${createdAt}
 
 👤 Клиент:
 Имя: ${name}
 Телефон: ${phone}
-Email: ${email}
+Email: ${email || "-"}
 Комментарий: ${comment || "-"}
-
-📋 Ответы:
-${formattedAnswers.join("\n")}
     `;
 
     const response = await axios.post(
@@ -55,7 +56,10 @@ ${formattedAnswers.join("\n")}
           NAME: name,
           PHONE: [{ VALUE: phone, VALUE_TYPE: "WORK" }],
           EMAIL: email ? [{ VALUE: email, VALUE_TYPE: "WORK" }] : [],
-          COMMENTS: comments
+
+          // 🔥 НОВОЕ
+          COMMENTS: comments,
+          ANSWERS: answersText
         }
       }
     );
