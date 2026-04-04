@@ -1,24 +1,29 @@
-import { uploadImage } from "../services/storage.service.js";
 import { prisma } from "../utils/prisma.js";
 
 export const createOptionWithImage = async (req, res) => {
-  const { text, questionId } = req.body;
+  try {
+    const { text, questionId } = req.body;
+    const file = req.file;
 
-  const file = req.file;
+    console.log("FILE:", file);
 
-  let imageUrl = null;
+    let imageUrl = null;
 
-  if (file) {
-    imageUrl = await uploadImage(file);
+    if (file) {
+      imageUrl = `https://rendermood.onrender.com/uploads/${file.filename}`;
+    }
+
+    const option = await prisma.option.create({
+      data: {
+        text,
+        questionId: Number(questionId),
+        imageUrl,
+      },
+    });
+
+    res.json(option);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to create option" });
   }
-
-  const option = await prisma.option.create({
-    data: {
-      text,
-      imageUrl,
-      questionId: Number(questionId),
-    },
-  });
-
-  res.json(option);
 };
