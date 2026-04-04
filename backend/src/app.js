@@ -5,7 +5,7 @@ import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger.js";
 import stepRoutes from "./routes/step.routes.js";
 import submissionRoutes from "./routes/submission.routes.js";
-
+import questionImageRoutes from "./routes/questionImage.routes.js";
 const app = express();
 
 app.use(cors());
@@ -14,7 +14,8 @@ app.use(express.json());
 
 // Swagger UI (SaaS style)
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
+//Supabase
+app.use("/api/images", questionImageRoutes);
 // routes
 app.use("/api/steps", stepRoutes);
 app.use("/api/submissions", submissionRoutes);

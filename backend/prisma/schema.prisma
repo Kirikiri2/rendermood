@@ -46,19 +46,12 @@ model Step {
 }
 
 model QuestionImage {
-  id Int @id @default(autoincrement())
-
+  id  Int    @id @default(autoincrement())
   url String
-  alt String?
-
-  sortOrder Int @default(0)
+  key String
 
   questionId Int
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([questionId])
 }
 
 model Question {
