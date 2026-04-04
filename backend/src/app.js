@@ -3,6 +3,7 @@ import helmet from "helmet";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
 import path from "path";
+import fs from "fs";
 
 import { swaggerSpec } from "./config/swagger.js";
 
@@ -17,9 +18,18 @@ app.use(helmet());
 app.use(express.json());
 
 /* =========================
+   CREATE UPLOADS FOLDER (FIX)
+========================= */
+const uploadsDir = path.resolve("uploads");
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
+/* =========================
    STATIC FILES (uploads)
 ========================= */
-app.use("/uploads", express.static(path.resolve("uploads")));
+app.use("/uploads", express.static(uploadsDir));
 
 /* =========================
    SWAGGER
