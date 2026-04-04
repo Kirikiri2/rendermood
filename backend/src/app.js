@@ -8,7 +8,9 @@ import submissionRoutes from "./routes/submission.routes.js";
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: "*", // можно ограничить позже
+}));
 app.use(helmet());
 app.use(express.json());
 
