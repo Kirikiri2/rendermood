@@ -1,4 +1,4 @@
-import prisma from "../utils/prisma.js";
+import {prisma} from "../utils/prisma.js";
 import { sendLeadToBitrix } from "../services/bitrix.service.js";
 
 export const createSubmission = async (req, res) => {
