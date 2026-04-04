@@ -6,6 +6,23 @@ export const SubmissionController = {
     try {
       const { name, phone, email, comment, consent, answers } = req.body;
 
+      // 0. ❗ CHECK DUPLICATE USER (ADDED)
+      const existing = await prisma.submission.findFirst({
+        where: {
+          OR: [
+            { email },
+            { phone }
+          ]
+        }
+      });
+
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          error: "User already submitted this form"
+        });
+      }
+
       // 1. save to DB
       const submission = await prisma.submission.create({
         data: {
