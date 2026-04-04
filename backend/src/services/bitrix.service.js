@@ -1,49 +1,72 @@
 import axios from "axios";
+import { prisma } from "../utils/prisma.js";
 
-const BITRIX_URL =
-  "https://b24-1x23x3.bitrix24.ru/rest/1/ebf2lfzhwuqftfmj/crm.lead.add.json";
+const BITRIX_WEBHOOK = process.env.BITRIX_WEBHOOK;
 
-export const sendLeadToBitrix = async (submission) => {
-  const answersText = submission.answers
-    .map((a) => {
-      return `Q${a.questionId}: ${
-        a.value || a.numberValue || (a.optionId ? `option ${a.optionId}` : "")
-      }`;
-    })
-    .join("\n");
+export const BitrixService = {
+  createLead: async ({ name, phone, email, comment, answers }) => {
+    try {
+      const questions = await prisma.question.findMany({
+        include: { options: true }
+      });
 
-  const payload = {
-    fields: {
-      TITLE: `Заявка с сайта`,
-      
-      NAME: submission.name?.split(" ")[0] || "",
-      LAST_NAME: submission.name?.split(" ").slice(1).join(" ") || "",
+      const questionMap = new Map();
+      questions.forEach(q => questionMap.set(q.id, q));
 
-      PHONE: [
+      const formattedAnswers = answers.map(a => {
+        const question = questionMap.get(a.questionId);
+        if (!question) return null;
+
+        let answerText = "";
+
+        // option answer
+        if (a.optionId) {
+          const option = question.options.find(o => o.id === a.optionId);
+          answerText = option?.text || "Не найдено";
+        }
+        // slider / input value
+        else if (a.numberValue !== null && a.numberValue !== undefined) {
+          answerText = String(a.numberValue);
+        }
+        else if (a.value) {
+          answerText = a.value;
+        }
+
+        return `• ${question.text}: ${answerText}`;
+      }).filter(Boolean);
+
+      const createdAt = new Date().toLocaleString("ru-RU");
+
+      const comments = `
+📅 Дата заявки: ${createdAt}
+
+👤 Клиент:
+Имя: ${name}
+Телефон: ${phone}
+Email: ${email}
+Комментарий: ${comment || "-"}
+
+📋 Ответы:
+${formattedAnswers.join("\n")}
+      `;
+
+      const response = await axios.post(
+        `${BITRIX_WEBHOOK}crm.lead.add.json`,
         {
-          VALUE: submission.phone,
-          VALUE_TYPE: "WORK",
-        },
-      ],
+          FIELDS: {
+            TITLE: "Квиз: заявка на дизайн",
+            NAME: name,
+            PHONE: [{ VALUE: phone, VALUE_TYPE: "WORK" }],
+            EMAIL: email ? [{ VALUE: email, VALUE_TYPE: "WORK" }] : [],
+            COMMENTS: comments
+          }
+        }
+      );
 
-      EMAIL: [
-        {
-          VALUE: submission.email,
-          VALUE_TYPE: "WORK",
-        },
-      ],
-
-      COMMENTS: `
-Комментарий:
-${submission.comment || ""}
-
-Ответы:
-${answersText}
-      `.trim(),
-    },
-  };
-
-  const { data } = await axios.post(BITRIX_URL, payload);
-
-  return data;
+      return response.data;
+    } catch (error) {
+      console.error("Bitrix error:", error.response?.data || error.message);
+      return null;
+    }
+  }
 };

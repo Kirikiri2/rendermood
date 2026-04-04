@@ -1,90 +1,68 @@
 import { prisma } from "../utils/prisma.js";
-import { AppError } from "../errors/AppError.js";
+import { BitrixService } from "./bitrix.service.js";
 
 export const SubmissionService = {
   create: async (data) => {
-    const { name, phone, email, consent, answers } = data;
+    const { name, phone, email, comment, consent, answers } = data;
 
-    // 🔒 0. базовая проверка входных данных
-    if (!name || !phone || !email) {
-      throw new AppError(400, "MISSING_FIELDS", "Name, phone or email is missing");
+    // 0. обязательные поля (под твою схему)
+    if (!email || !phone || !name) {
+      throw new Error("Name, phone, email are required");
     }
 
-    if (!Array.isArray(answers)) {
-      throw new AppError(400, "INVALID_ANSWERS", "Answers must be an array");
+    if (!consent) {
+      throw new Error("Consent must be accepted");
     }
 
-    if (consent !== true) {
-      throw new AppError(400, "CONSENT_REQUIRED", "Consent must be true");
-    }
-
-    // 1. получаем все вопросы из БД
+    // 1. получаем вопросы
     const questions = await prisma.question.findMany({
-      select: { id: true }
+      include: { options: true }
     });
 
     const questionIds = questions.map(q => q.id);
 
-    // 2. какие ответы пришли
+    // 2. пришедшие ответы
     const answeredIds = answers.map(a => a.questionId);
 
-    // 3. проверка на пропуски
-    const missing = questionIds.filter(
-      id => !answeredIds.includes(id)
-    );
+    // 3. проверка пропусков
+    const missing = questionIds.filter(id => !answeredIds.includes(id));
 
     if (missing.length > 0) {
-      throw new AppError(
-        400,
-        "MISSING_ANSWERS",
-        `Missing answers for questions: ${missing.join(", ")}`
-      );
+      throw new Error(`Missing answers for questions: ${missing.join(", ")}`);
     }
 
-    // 4. проверка на лишние ответы
-    const extra = answeredIds.filter(
-      id => !questionIds.includes(id)
-    );
+    // 4. проверка лишних
+    const extra = answeredIds.filter(id => !questionIds.includes(id));
 
     if (extra.length > 0) {
-      throw new AppError(
-        400,
-        "INVALID_QUESTION_IDS",
-        `Invalid questionIds: ${extra.join(", ")}`
-      );
+      throw new Error(`Invalid questionIds: ${extra.join(", ")}`);
     }
 
-    // 5. защита от дублей
+    // 5. дубликат (лучше email + phone)
     const existing = await prisma.submission.findFirst({
       where: {
-        OR: [
-          { email },
-          { phone }
-        ]
+        OR: [{ email }, { phone }]
       }
     });
 
     if (existing) {
-      throw new AppError(
-        409,
-        "ALREADY_SUBMITTED",
-        "You already submitted this form"
-      );
+      throw new Error("You already submitted this form");
     }
 
-    // 6. создаём submission
-    return prisma.submission.create({
+    // 6. сохраняем submission
+    const submission = await prisma.submission.create({
       data: {
         name,
         phone,
         email,
-        consent, // 🔥 ВАЖНО (теперь правильно)
-
+        comment,
+        consent,
         answers: {
-          create: answers.map((a) => ({
+          create: answers.map(a => ({
             questionId: a.questionId,
-            optionId: a.optionId ?? null,
-            value: a.value ?? null
+            optionId: a.optionId || null,
+            value: a.value || null,
+            numberValue: a.numberValue ?? null
           }))
         }
       },
@@ -92,5 +70,16 @@ export const SubmissionService = {
         answers: true
       }
     });
+
+    // 7. отправка в Bitrix (не ломает флоу)
+    await BitrixService.createLead({
+      name,
+      phone,
+      email,
+      comment,
+      answers
+    });
+
+    return submission;
   }
 };
