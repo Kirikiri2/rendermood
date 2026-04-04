@@ -24,7 +24,10 @@ export const uploadQuestionImage = async (req, res, next) => {
 
     res.json(image);
   } catch (err) {
-    console.error(err); 
-    next(err);
-  }
+  console.error("UPLOAD ERROR:", err);
+  return res.status(500).json({
+    message: err.message,
+    stack: err.stack,
+  });
+}
 };
