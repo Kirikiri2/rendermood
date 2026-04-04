@@ -59,8 +59,6 @@ model Question {
   stepId Int  @unique
   step   Step @relation(fields: [stepId], references: [id], onDelete: Cascade)
 
-  imageUrl String?
-
   options Option[]
 
   // базовые значения (fallback)
@@ -89,8 +87,8 @@ model Option {
   questionId Int
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
-  // 👇 ключевая логика
   propertyType PropertyType?
+  imageUrl     String?
 
   createdAt DateTime @default(now())
 
