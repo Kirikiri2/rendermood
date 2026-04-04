@@ -3,7 +3,7 @@ import { prisma } from "../utils/prisma.js";
 
 const BITRIX_WEBHOOK = process.env.BITRIX_WEBHOOK;
 
-export const BitrixService = {
+export const sendLeadToBitrix  = {
   createLead: async ({ name, phone, email, comment, answers }) => {
     try {
       const questions = await prisma.question.findMany({
