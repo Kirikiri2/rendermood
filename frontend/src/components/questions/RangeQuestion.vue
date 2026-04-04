@@ -2,11 +2,14 @@
 import { computed } from 'vue'
 import { useQuizStore } from '@/stores/quizStore'
 import { stepConfig } from '@/config/stepConfig'
-import type { Question } from '@/shared/quiz';
-
+import type { AnswerValue, Question } from '@/shared/quiz'
 
 const props = defineProps<{
   question: Question
+  answer?: AnswerValue
+  min?: number
+  max?: number
+  step?: number
 }>()
 
 const store = useQuizStore()

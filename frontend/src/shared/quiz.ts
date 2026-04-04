@@ -4,6 +4,7 @@ export interface Option {
   id: number
   text: string
   questionId: number
+  isOther?: boolean
 }
 
 export interface Question {
@@ -23,8 +24,18 @@ export interface Step {
 }
 
 export type AnswerValue = {
-  selected?: number | number[]
-  custom?: string
+  selected?: number | number[] // для radio / checkbox
+  value?: number // для range
+  custom?: string // для input / доп. поля
+  otherText?: string 
 }
 
 export type Answers = Record<number, AnswerValue>
+
+export type SubmissionData = {
+  name: string
+  phone: string
+  email?: string
+  notes?: string
+  answers: Answers
+}

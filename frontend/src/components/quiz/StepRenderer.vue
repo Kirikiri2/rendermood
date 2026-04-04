@@ -1,60 +1,43 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useQuizStore } from '@/stores/quizStore'
-import QuestionRenderer from './QuestionRenderer.vue'
-import type { Step } from '@/shared/quiz'
-import { stepConfig } from '@/config/stepConfig'
+import type { Component } from 'vue'          
+import type { Question } from '@/shared/quiz'
 
-const props = defineProps<{
-  step: Step
-}>()
+import InputQuestion from '@/components/questions/InputQuestion.vue'
+import RadioQuestion from '@/components/questions/RadioQuestion.vue'
+import CheckboxQuestion from '@/components/questions/CheckboxQuestion.vue'
+import RangeQuestion from '@/components/questions/RangeQuestion.vue'
+
+import { useQuizStore } from '@/stores/quizStore'
 
 const store = useQuizStore()
+const step = computed(() => store.currentStepData)
 
-const answer = computed(() => store.answers[props.step.question.id])
 
-//const config = computed(() => stepConfig[props.step.id])
+const componentMap: Record<string, Component> = {
+  input: InputQuestion,
+  radio: RadioQuestion,
+  checkbox: CheckboxQuestion,
+  range: RangeQuestion,
+}
 
-const isValid = computed(() => {
-  const q = props.step.question
-  const value = store.answers[q.id]
-  const config = stepConfig[props.step.id]
-
-  if (!value) return false
-
-  if (q.type === 'checkbox') {
-    const selected = value.selected
-
-    if (Array.isArray(selected)) {
-      if (config?.minSelected) {
-        return selected.length >= config.minSelected
-      }
-
-      return selected.length > 0
-    }
-
-    return false
-  }
-
-  // input / radio
-  return !!value.selected || !!value.custom
-})
+const getQuestionComponent = (question: Question): Component => {
+  return componentMap[question.type] || InputQuestion
+}
 </script>
 
 <template>
-  <div>
+  <div v-if="step && step.question">
     <h2>{{ step.title }}</h2>
-    <p>{{ step.question.text }}</p>
 
-    <QuestionRenderer :question="step.question" :answer="answer" />
+    <component
+      :is="getQuestionComponent(step.question)"
+      :question="step.question"
+    />
 
     <div style="margin-top: 20px">
-      <button v-if="store.currentStep > 0" @click="store.prevStep()">Назад</button>
-
-      <button v-if="step.question.type !== 'radio'" :disabled="!isValid" @click="store.nextStep()">
-        Далее
-      </button>
-      <div v-if="!isValid && step.question.type === 'checkbox'">Выберите минимум один вариант</div>
+      <button @click="store.prevStep" :disabled="store.currentStep === 0">Назад</button>
+      <button @click="store.nextStep" :disabled="store.currentStep >= store.steps.length - 1">Вперед</button>
     </div>
   </div>
 </template>

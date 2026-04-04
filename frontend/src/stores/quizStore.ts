@@ -25,16 +25,18 @@ export const useQuizStore = defineStore('quiz', {
         this.answers[questionId] = { custom: value }
       }
 
+      // Пример: если первый шаг изменился, очищаем второй
+      if (questionId === 1) delete this.answers[2]
+
       this.save()
     },
 
     toggleCheckbox(questionId: number, optionId: number) {
-      const current = this.answers[questionId]
-
+      const current: AnswerValue = this.answers[questionId] || {}
       let selected: number[] = []
 
-      if (current?.selected && Array.isArray(current.selected)) {
-        selected = current.selected
+      if (current.selected) {
+        selected = Array.isArray(current.selected) ? current.selected : [current.selected]
       }
 
       if (selected.includes(optionId)) {
@@ -43,21 +45,19 @@ export const useQuizStore = defineStore('quiz', {
         selected.push(optionId)
       }
 
-      this.answers[questionId] = {
-        ...current,
-        selected,
-      }
-
+      this.answers[questionId] = { ...current, selected }
       this.save()
     },
+
     setCustomInput(questionId: number, value: string) {
-      const current = this.answers[questionId] || {}
+      const current: AnswerValue = this.answers[questionId] || {}
+      this.answers[questionId] = { ...current, custom: value }
+      this.save()
+    },
 
-      this.answers[questionId] = {
-        ...current,
-        custom: value,
-      }
-
+    setRangeAnswer(questionId: number, value: number) {
+      const current: AnswerValue = this.answers[questionId] || {}
+      this.answers[questionId] = { ...current, value }
       this.save()
     },
 
