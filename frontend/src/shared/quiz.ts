@@ -1,31 +1,28 @@
-export type QuestionType = 'input' | 'radio' | 'checkbox' | 'range' | 'slider' | 'carousel'
-
+// shared/quiz.ts
 export interface Option {
   id: number
   text: string
   questionId: number
-  isOther?: boolean
-  group?: 'residential' | 'commercial' | 'other'
-  propertyType?: 'residential' | 'commercial'
+  propertyType: 'residential' | 'commercial' | null
+  imageUrl: string | null
   createdAt: string
 }
 
 export interface Question {
   id: number
   text: string
-  type: QuestionType
+  type: 'radio' | 'checkbox' | 'input' | 'range' | 'slider' | 'carousel'
   stepId: number
-  createdAt: string
-  imageUrl: string | null
   min: number | null
   max: number | null
   stepValue: number | null
   defaultValue: number | null
   isRequired: boolean
-  options: Option[]
+  createdAt: string
+  options?: Option[]
 }
 
-export type Step = {
+export interface Step {
   id: number
   title: string
   order: number
@@ -34,24 +31,15 @@ export type Step = {
   question?: Question
 }
 
-export type AnswerValue = {
+export interface AnswerValue {
   selected?: number | number[]
-  value?: number
   custom?: string
-  otherText?: string
+  value?: number
 }
 
 export type Answers = Record<number, AnswerValue>
 
-export type SubmissionData = {
-  name: string
-  phone: string
-  email?: string
-  notes?: string
-  answers: Answers
-}
-
-export type FormData = {
+export interface FormData {
   name: string
   phone: string
   email: string

@@ -1,85 +1,78 @@
+<!-- components/SubmissionStep.vue -->
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useQuizStore } from '@/stores/quizStore'
 
 const store = useQuizStore()
 
-// Поля формы
-const name = ref('')
-const phone = ref('')
-const email = ref('')
-const notes = ref('')
+// 🔒 Безопасная обработка текстовых полей
+const handleInput = (e: Event, key: 'name' | 'phone' | 'email' | 'comment') => {
+  const target = e.target as HTMLInputElement | HTMLTextAreaElement
+  store.setFormField(key, target.value as string)
+}
 
-// Сообщения об ошибках/успехе
-const errorMessage = ref('')
-const successMessage = ref('')
-
-// Отправка формы
-const submit = async () => {
-  try {
-    // Проверка обязательных полей
-    if (!phone.value) {
-      errorMessage.value = 'Телефон обязателен для отправки'
-      return
-    }
-
-    const response = await fetch('http://localhost:3000/api/submissions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: name.value,
-        phone: phone.value,
-        email: email.value,
-        notes: notes.value,
-        answers: store.answers,
-      }),
-    })
-
-    if (!response.ok) {
-      const text = await response.text()
-      throw new Error(text)
-    }
-
-    successMessage.value = 'Заявка успешно отправлена!'
-    errorMessage.value = ''
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      errorMessage.value = err.message
-    } else {
-      errorMessage.value = 'Произошла неизвестная ошибка'
-    }
-    successMessage.value = ''
-  }
+// 🔒 Безопасная обработка чекбокса
+const handleCheckbox = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  store.setFormField('agree', target.checked)
 }
 </script>
 
 <template>
-  <div>
-    <h2>Введите ваши контакты</h2>
-
-    <div style="margin-bottom: 10px">
-      <label>Имя:</label>
-      <input v-model="name" type="text" placeholder="Ваше имя" />
+  <div class="space-y-4">
+    <div>
+      <label class="block text-sm font-medium mb-1">Имя *</label>
+      <input
+        v-model="store.form.name"
+        @input="handleInput($event, 'name')"
+        type="text"
+        class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+        placeholder="Ваше имя"
+      />
     </div>
 
-    <div style="margin-bottom: 10px">
-      <label>Телефон*:</label>
-      <input v-model="phone" type="text" placeholder="+7 999 999-99-99" />
+    <div>
+      <label class="block text-sm font-medium mb-1">Телефон *</label>
+      <input
+        v-model="store.form.phone"
+        @input="handleInput($event, 'phone')"
+        type="tel"
+        class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+        placeholder="+7 (___) ___-__-__"
+      />
     </div>
 
-    <div style="margin-bottom: 10px">
-      <label>Email:</label>
-      <input v-model="email" type="email" placeholder="example@mail.com" />
+    <div>
+      <label class="block text-sm font-medium mb-1">Email</label>
+      <input
+        v-model="store.form.email"
+        @input="handleInput($event, 'email')"
+        type="email"
+        class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+        placeholder="email@example.com"
+      />
     </div>
 
-    <div style="margin-bottom: 10px">
-      <label>Особые пожелания:</label>
-      <textarea v-model="notes" placeholder="Что-то особенное..."></textarea>
+    <div>
+      <label class="block text-sm font-medium mb-1">Комментарий</label>
+      <textarea
+        v-model="store.form.comment"
+        @input="handleInput($event, 'comment')"
+        class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+        rows="3"
+        placeholder="Дополнительная информация"
+      />
     </div>
 
-    <button @click="submit">Отправить</button>
-
-    <div v-if="errorMessage" style="color: red; margin-top: 10px">{{ errorMessage }}</div>
-    <div v-if="successMessage" style="color: green; margin-top: 10px">{{ successMessage }}</div>
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input
+        v-model="store.form.agree"
+        @change="handleCheckbox($event)"
+        type="checkbox"
+        class="w-4 h-4 accent-blue-600"
+      />
+      <span class="text-sm">
+        Согласен на обработку <a href="/privacy" class="text-blue-600 hover:underline">персональных данных</a> *
+      </span>
+    </label>
   </div>
 </template>

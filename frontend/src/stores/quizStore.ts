@@ -1,32 +1,6 @@
-import type { Answers, AnswerValue, FormData, Step, Question } from '@/shared/quiz'
+// stores/quizStore.ts
+import type { Answers, AnswerValue, FormData, Step, Question, Option } from '@/shared/quiz'
 import { defineStore } from 'pinia'
-
-// ✅ Выносим функцию валидации шага ОТДЕЛЬНО от стора
-// Она принимает answer и type, возвращает boolean
-export const validateStepAnswer = (
-  answer: AnswerValue | undefined,
-  questionType: string
-): boolean => {
-  if (!answer) return false
-
-  // Нормализуем тип: slider → range
-  const type = questionType === 'slider' ? 'range' : questionType
-
-  switch (type) {
-    case 'radio':
-      return typeof answer.selected === 'number'
-    case 'checkbox':
-      return Array.isArray(answer.selected) && answer.selected.length > 0
-    case 'range':
-      return typeof answer.value === 'number' && !isNaN(answer.value)
-    case 'input':
-      return !!answer.custom?.trim()
-    case 'carousel':
-      return typeof answer.selected === 'number'
-    default:
-      return false
-  }
-}
 
 export const useQuizStore = defineStore('quiz', {
   state: () => {
@@ -35,90 +9,129 @@ export const useQuizStore = defineStore('quiz', {
       steps: [] as Step[],
       currentStep: 0,
       answers: saved.answers || ({} as Answers),
-      form: saved.form || ({
-        name: '',
-        phone: '',
-        email: '',
-        comment: '',
-        agree: false,
-      } as FormData),
+      form:
+        saved.form ||
+        ({
+          name: '',
+          phone: '',
+          email: '',
+          comment: '',
+          agree: false,
+        } as FormData),
     }
   },
 
   getters: {
     currentStepData: (state): Step | undefined => state.steps[state.currentStep],
-
-    // ✅ Валидация формы: используем внешнюю функцию validateStepAnswer
-    isFormValid: (state): boolean => {
-      // Проверяем только шаги с type: 'question'
-      const questionSteps = state.steps.filter((s: Step) => s.type === 'question')
-      
-      const allAnswered = questionSteps.every((step: Step) => {
-        if (!step.question) return false
-        const answer = state.answers[step.question.id]
-        return validateStepAnswer(answer, step.question.type)
-      })
-      
-      const formFilled = !!(state.form.name?.trim() && state.form.phone?.trim() && state.form.agree)
-      return allAnswered && formFilled
-    },
   },
 
   actions: {
     async fetchSteps() {
-      try {
-        const res = await fetch('https://rendermood.onrender.com/api/steps')
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        
-        const rawSteps = await res.json() as Step[]
-
-        // ✅ Сортируем по order + нормализуем slider → range
-        this.steps = rawSteps
-          .sort((a, b) => a.order - b.order)
-          .map((step) => {
-            if (step.question?.type === 'slider') {
-              step.question.type = 'range'
-            }
-            return step
-          })
-
-        console.log('✅ Шаги загружены:', this.steps.map((s) => ({ 
-          id: s.id, 
-          order: s.order, 
-          type: s.question?.type 
-        })))
-      } catch (error) {
-        console.error('❌ Ошибка загрузки шагов:', error)
-      }
+      const res = await fetch('https://rendermood.onrender.com/api/steps')
+      const data: Step[] = await res.json() // ✅ Исправлено: было "Step[]" без "data:"
+      this.steps = data.sort((a: Step, b: Step) => a.order - b.order) // ✅ Явные типы параметров
     },
 
-    setAnswer(questionId: number, value: number) {
-      this.answers[questionId] = { selected: value }
+    setAnswer(questionId: number, value: number | string) {
+      if (typeof value === 'number') {
+        this.answers[questionId] = { selected: value }
+      } else {
+        this.answers[questionId] = { custom: value }
+      }
+      if (questionId === 1) delete this.answers[2]
       this.save()
     },
 
     toggleCheckbox(questionId: number, optionId: number) {
-      const current = this.answers[questionId]?.selected
-      let selected: number[] = Array.isArray(current) ? [...current] : []
+      const current: AnswerValue = this.answers[questionId] || {}
+      let selected: number[] = Array.isArray(current.selected)
+        ? [...current.selected]
+        : current.selected !== undefined
+          ? [current.selected as number]
+          : []
 
       if (selected.includes(optionId)) {
-        selected = selected.filter((id) => id !== optionId)
+        selected = selected.filter((id: number) => id !== optionId)
       } else {
         selected.push(optionId)
       }
-
       this.answers[questionId] = { selected }
       this.save()
     },
 
-    setCustomInput(questionId: number, value: string) {
-      this.answers[questionId] = { custom: value }
+    setRangeAnswer(questionId: number, value: number) {
+      const current: AnswerValue = this.answers[questionId] || {}
+      this.answers[questionId] = { ...current, value }
       this.save()
     },
 
-    setRangeAnswer(questionId: number, value: number) {
-      this.answers[questionId] = { value }
+    setCustomInput(questionId: number, value: string) {
+      const current: AnswerValue = this.answers[questionId] || {}
+      this.answers[questionId] = { ...current, custom: value }
       this.save()
+    },
+
+    setAnswerWithCustom(questionId: number, optionId: number, customValue?: string) {
+      const current: AnswerValue = this.answers[questionId] || {}
+      const payload: AnswerValue = { ...current, selected: optionId } // ✅ Исправлено: спред из объекта
+      if (customValue?.trim()) {
+        payload.custom = customValue.trim()
+      }
+      this.answers[questionId] = payload
+      this.save()
+    },
+
+    setFormField<K extends keyof FormData>(key: K, value: FormData[K]) {
+      this.form[key] = value
+      this.save()
+    },
+    setCustomRangeAnswer(questionId: number, value: number) {
+      // Для значений вне диапазона сохраняем как custom, а value — для совместимости
+      const current = this.answers[questionId] || {}
+      this.answers[questionId] = {
+        ...current,
+        custom: String(value), // строковое представление кастомного значения
+        value: value, // числовое для обратной совместимости
+      }
+      this.save()
+    },
+
+    isQuestionValid(questionId: number, type: string): boolean {
+      const ans = this.answers[questionId]
+      if (!ans) return false
+
+      if (type === 'checkbox') {
+        const selected = Array.isArray(ans.selected) ? ans.selected : []
+        if (selected.length === 0) return false
+
+        const question = this.steps.find((s: Step) => s.question?.id === questionId)?.question
+        const otherOpt = question?.options?.find(
+          (o: Option) =>
+            o.text.toLowerCase().includes('другое') || o.text.toLowerCase().includes('other'),
+        )
+        if (otherOpt && selected.includes(otherOpt.id)) {
+          return !!ans.custom?.trim()
+        }
+        return true
+      }
+
+      if (type === 'radio') {
+        const question = this.steps.find((s: Step) => s.question?.id === questionId)?.question
+        const otherOpt = question?.options?.find(
+          (o: Option) =>
+            o.text.toLowerCase().includes('другое') || o.text.toLowerCase().includes('other'),
+        )
+        if (otherOpt && ans.selected === otherOpt.id) {
+          return !!ans.custom?.trim()
+        }
+        return ans.selected !== undefined
+      }
+
+      if (type === 'range' || type === 'slider') {
+        return typeof ans.value === 'number'
+      }
+
+      return true
     },
 
     nextStep() {
@@ -133,57 +146,52 @@ export const useQuizStore = defineStore('quiz', {
       }
     },
 
-    setFormField<K extends keyof FormData>(key: K, value: FormData[K]) {
-      this.form[key] = value
-      this.save()
-    },
+    submitQuiz() {
+      const cleanAnswers = Object.fromEntries(
+        Object.entries(this.answers).map(([key, value]) => {
+          const ans = value as AnswerValue
+          const cleaned: AnswerValue = { ...ans }
+          if (cleaned.custom) cleaned.custom = cleaned.custom.trim()
+          if (cleaned.custom === '') delete cleaned.custom
+          return [key, cleaned]
+        }),
+      )
 
-    async submitForm() {
-      if (!this.isFormValid) {
-        console.warn('Форма не заполнена')
+      const payload = {
+        name: this.form.name.trim(),
+        phone: this.form.phone.trim(),
+        email: this.form.email?.trim() || '',
+        notes: this.form.comment?.trim() || '',
+        answers: cleanAnswers,
+      }
+
+      if (!payload.name || !payload.phone) {
+        console.error('❌ Обязательные поля пустые')
         return
       }
 
-      const payload = {
-        answers: this.answers,
-        form: this.form,
-      }
+      console.log('🚀 Отправка:', JSON.stringify(payload, null, 2))
 
-      try {
-        const res = await fetch('https://rendermood.onrender.com/api/steps', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+      fetch('http://localhost:3000/api/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          console.log('✅ Успех:', data)
         })
-        if (res.ok) {
-          localStorage.removeItem('quiz')
-          console.log('✅ Форма отправлена')
-        }
-      } catch (error) {
-        console.error('❌ Ошибка отправки:', error)
-      }
+        .catch((err) => console.error('❌ Ошибка:', err))
     },
 
     save() {
-      localStorage.setItem('quiz', JSON.stringify({
-        answers: this.answers,
-        form: this.form,
-      }))
-    },
-
-    clear() {
-      localStorage.removeItem('quiz')
-      this.$reset()
-    },
-    
-    // ✅ Экшен для валидации конкретного шага (если нужно из компонента)
-    validateStep(step: Step): boolean {
-      if (step.type === 'form') {
-        return !!(this.form.name?.trim() && this.form.phone?.trim() && this.form.agree)
-      }
-      if (!step.question) return false
-      const answer = this.answers[step.question.id]
-      return validateStepAnswer(answer, step.question.type)
+      localStorage.setItem(
+        'quiz',
+        JSON.stringify({
+          answers: this.answers,
+          form: this.form,
+        }),
+      )
     },
   },
 })

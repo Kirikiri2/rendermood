@@ -1,118 +1,89 @@
+<!-- components/questions/RadioQuestion.vue -->
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue'
 import type { Question, Option } from '@/shared/quiz'
 import { useQuizStore } from '@/stores/quizStore'
-import { computed, ref, watch } from 'vue'
 
-const props = defineProps<{
-  question: Question
-}>()
-
+const props = defineProps<{ question: Question }>()
 const store = useQuizStore()
-const otherInput = ref('')
+const customValue = ref('')
 
-const otherOption = computed(() =>
-  props.question.options.find((opt: Option) => opt.isOther === true),
+const isOtherOption = (opt: Option): boolean => {
+  const text = opt.text.toLowerCase()
+  return text.includes('другое') || text.includes('other') || text.includes('иное')
+}
+
+const otherOption = computed(() => props.question.options?.find(isOtherOption))
+const currentAnswer = computed(() => store.answers[props.question.id])
+
+const isSelected = (optionId: number): boolean =>
+  currentAnswer.value?.selected === optionId
+
+const isOtherSelected = computed(() =>
+  otherOption.value ? isSelected(otherOption.value.id) : false
 )
 
-const selectedId = computed(() => store.answers[props.question.id]?.selected as number | undefined)
-
-const showOtherInput = computed(() => {
-  if (!otherOption.value) return false
-  return selectedId.value === otherOption.value.id
-})
-
-// Синхронизация текста при загрузке
-watch(
-  () => store.answers[props.question.id]?.otherText,
-  (val) => {
-    otherInput.value = val || ''
-  },
-  { immediate: true },
-)
+watch(() => currentAnswer.value?.custom, (val) => {
+  if (val) customValue.value = val
+}, { immediate: true })
 
 const selectOption = (optionId: number) => {
-  store.setAnswer(props.question.id, optionId)
-
-  setTimeout(() => {
-    store.nextStep()
-  }, 300)
+  if (otherOption.value && optionId === otherOption.value.id) {
+    store.setAnswerWithCustom(props.question.id, optionId, customValue.value)
+  } else {
+    store.setAnswer(props.question.id, optionId)
+    customValue.value = ''
+  }
 }
 
-const saveOtherText = () => {
-  if (!otherInput.value.trim() || !otherOption.value) return
-
-  store.setAnswer(props.question.id, otherOption.value.id)
-  store.setCustomInput(props.question.id, otherInput.value.trim())
+const updateCustom = (e: Event) => {
+  const val = (e.target as HTMLInputElement).value
+  customValue.value = val
+  store.setCustomInput(props.question.id, val)
 }
+
+defineEmits<{ (e: 'complete'): void }>()
 </script>
 
 <template>
-  <div class="radio-question">
-    <div
-      v-for="opt in question.options"
-      :key="opt.id"
-      class="radio-option"
-      :class="{ selected: selectedId === opt.id }"
-      @click="selectOption(opt.id)"
+  <div class="space-y-3">
+    <label 
+      v-for="option in question.options" 
+      :key="option.id"
+      class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 rounded transition"
     >
-      {{ opt.text }}
-    </div>
-
-    <div v-if="showOtherInput" class="other-input-container">
       <input
-        v-model="otherInput"
-        placeholder="Укажите, какое именно помещение..."
-        @blur="saveOtherText"
-        @keyup.enter="saveOtherText"
-        class="other-input"
+        type="radio"
+        :name="`question-${question.id}`"
+        :value="option.id"
+        :checked="isSelected(option.id)"
+        @change="selectOption(option.id)"
+        class="w-4 h-4 cursor-pointer accent-blue-600"
       />
-      <small v-if="!otherInput.trim()" class="error-text">
-        Пожалуйста, уточните тип помещения
-      </small>
+      <span>{{ option.text }}</span>
+    </label>
+
+    <div v-if="isOtherSelected" class="mt-3 pl-6 animate-fadeIn">
+      <input
+        v-model="customValue"
+        @input="updateCustom"
+        type="text"
+        placeholder="Введите ваш вариант"
+        class="border border-gray-300 rounded-lg px-4 py-2 w-full max-w-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        :class="{ 'border-red-400': isOtherSelected && !customValue.trim() }"
+        autofocus
+      />
+      <p v-if="isOtherSelected && !customValue.trim()" class="text-sm text-red-600 mt-1">
+        Пожалуйста, укажите ваш вариант
+      </p>
     </div>
   </div>
 </template>
 
 <style scoped>
-.radio-option {
-  padding: 14px 16px;
-  margin-bottom: 10px;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.radio-option:hover {
-  border-color: #9ca3af;
-  background-color: #f9fafb;
-}
-
-.radio-option.selected {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
-  font-weight: 500;
-}
-
-.other-input-container {
-  margin-top: 12px;
-}
-
-.other-input {
-  width: 100%;
-  padding: 12px 14px;
-  border: 2px solid #3b82f6;
-  border-radius: 8px;
-  font-size: 1rem;
-}
-
-.other-input:focus {
-  border-color: #2563eb;
-}
-
-.error-text {
-  color: #ef4444;
-  font-size: 0.9rem;
-  margin-top: 4px;
+.animate-fadeIn { animation: fadeIn 0.2s ease-in; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
