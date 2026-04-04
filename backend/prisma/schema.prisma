@@ -11,12 +11,37 @@ datasource db {
   provider = "postgresql"
 }
 
+//////////////////////////
+// ENUMS
+//////////////////////////
+
+enum QuestionType {
+  radio
+  checkbox
+  input
+  slider
+  carousel
+}
+
+enum StepType {
+  question
+  form
+}
+
+//////////////////////////
+// MODELS
+//////////////////////////
+
 model Step {
   id    Int    @id @default(autoincrement())
   title String
   order Int
 
+  type StepType @default(question)
+
   question Question?
+
+  createdAt DateTime @default(now())
 
   @@unique([order])
 }
@@ -26,13 +51,24 @@ model Question {
   text String
   type QuestionType
 
-  stepId Int  @unique
-  step   Step @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  stepId   Int      @unique
+  step     Step     @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  imageUrl String?
+  // варианты ответа (radio / checkbox)
+  options  Option[]
 
-  options Option[]
+  // настройки для slider
+  min          Int?
+  max          Int?
+  stepValue    Int?
+  defaultValue Int?
+
+  // обязательность вопроса
+  isRequired Boolean @default(true)
 
   createdAt DateTime @default(now())
-  answers   Answer[]
+
+  answers Answer[]
 }
 
 model Option {
@@ -42,16 +78,33 @@ model Option {
   questionId Int
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
+  createdAt DateTime @default(now())
+
   answers Answer[]
 }
 
 model Submission {
-  id Int @id @default(autoincrement())
+  id      Int     @id @default(autoincrement())
+  // КОНТАКТЫ
+  name    String // ФИО — обязательно
+  phone   String // телефон — обязательно
+  email   String // email — обязательно
+  comment String?
 
-  name  String
-  phone String
-  email String
+  // СОГЛАСИЕ
+  consent Boolean
 
+  // pageUrl     String?
+  // utmSource   String?
+  // utmMedium   String?
+  // utmCampaign String?
+  // utmTerm     String?
+  // utmContent  String?
+
+  // userAgent String?
+  // ipAddress String?
+
+  // СИСТЕМА
   createdAt DateTime @default(now())
 
   answers Answer[]
@@ -62,18 +115,22 @@ model Answer {
 
   submissionId Int
   questionId   Int
-  optionId     Int?
-  value        String?
+
+  // для radio / checkbox
+  optionId Int?
+
+  // для input
+  value String?
+
+  // для slider
+  numberValue Int?
 
   submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   question   Question   @relation(fields: [questionId], references: [id])
   option     Option?    @relation(fields: [optionId], references: [id])
 
-  @@index([submissionId])
-}
+  createdAt DateTime @default(now())
 
-enum QuestionType {
-  radio
-  checkbox
-  input
+  @@index([submissionId])
+  @@index([questionId])
 }
