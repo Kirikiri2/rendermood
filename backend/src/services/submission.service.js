@@ -1,10 +1,24 @@
 import { prisma } from "../utils/prisma.js";
+import { AppError } from "../errors/AppError.js";
 
 export const SubmissionService = {
   create: async (data) => {
-    const { name, phone, email, answers } = data;
+    const { name, phone, email, consent, answers } = data;
 
-    // 1. получаем все вопросы
+    // 🔒 0. базовая проверка входных данных
+    if (!name || !phone || !email) {
+      throw new AppError(400, "MISSING_FIELDS", "Name, phone or email is missing");
+    }
+
+    if (!Array.isArray(answers)) {
+      throw new AppError(400, "INVALID_ANSWERS", "Answers must be an array");
+    }
+
+    if (consent !== true) {
+      throw new AppError(400, "CONSENT_REQUIRED", "Consent must be true");
+    }
+
+    // 1. получаем все вопросы из БД
     const questions = await prisma.question.findMany({
       select: { id: true }
     });
@@ -20,45 +34,57 @@ export const SubmissionService = {
     );
 
     if (missing.length > 0) {
-      throw new Error(
-        `Not all questions answered. Missing: ${missing.join(", ")}`
+      throw new AppError(
+        400,
+        "MISSING_ANSWERS",
+        `Missing answers for questions: ${missing.join(", ")}`
       );
     }
 
-    // 4. проверка на лишние ответы (очень важно)
+    // 4. проверка на лишние ответы
     const extra = answeredIds.filter(
       id => !questionIds.includes(id)
     );
 
     if (extra.length > 0) {
-      throw new Error(
+      throw new AppError(
+        400,
+        "INVALID_QUESTION_IDS",
         `Invalid questionIds: ${extra.join(", ")}`
       );
     }
+
+    // 5. защита от дублей
     const existing = await prisma.submission.findFirst({
-    where: {
+      where: {
         OR: [
-            { email },
-            { phone }
-            ]
-        }
+          { email },
+          { phone }
+        ]
+      }
     });
 
     if (existing) {
-        throw new Error("You already submitted this form");
+      throw new AppError(
+        409,
+        "ALREADY_SUBMITTED",
+        "You already submitted this form"
+      );
     }
 
-    // 5. создаём submission
+    // 6. создаём submission
     return prisma.submission.create({
       data: {
         name,
         phone,
         email,
+        consent, // 🔥 ВАЖНО (теперь правильно)
+
         answers: {
-          create: answers.map(a => ({
+          create: answers.map((a) => ({
             questionId: a.questionId,
-            optionId: a.optionId || null,
-            value: a.value || null
+            optionId: a.optionId ?? null,
+            value: a.value ?? null
           }))
         }
       },
