@@ -5,6 +5,7 @@ import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger.js";
 import stepRoutes from "./routes/step.routes.js";
 import submissionRoutes from "./routes/submission.routes.js";
+import optionRoutes from "./routes/option.routes.js";
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // routes
 app.use("/api/steps", stepRoutes);
 app.use("/api/submissions", submissionRoutes);
+app.use("/api/options", optionRoutes);
 
 // healthcheck
 app.get("/health", (req, res) => {

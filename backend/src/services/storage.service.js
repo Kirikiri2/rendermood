@@ -3,9 +3,9 @@ import { supabase } from "../config/supabase.js";
 const BUCKET = "Rendermood";
 
 export async function uploadImage(file) {
-  const fileName = `${Date.now()}-${file.originalname}`;
+  const fileName = `options/${Date.now()}-${file.originalname}`;
 
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from(BUCKET)
     .upload(fileName, file.buffer, {
       contentType: file.mimetype,
@@ -14,10 +14,9 @@ export async function uploadImage(file) {
 
   if (error) throw error;
 
-  // публичная ссылка
-  const { data: publicUrl } = supabase.storage
+  const { data } = supabase.storage
     .from(BUCKET)
     .getPublicUrl(fileName);
 
-  return publicUrl.publicUrl;
+  return data.publicUrl;
 }
