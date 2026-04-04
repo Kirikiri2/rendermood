@@ -22,6 +22,9 @@ export interface Step {
   question: Question
 }
 
-export type AnswerValue = number | number[] | string
+export type AnswerValue = {
+  selected?: number | number[]
+  custom?: string
+}
 
 export type Answers = Record<number, AnswerValue>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { Question } from '@/shared/quiz';
+import type { Question } from '@/shared/quiz'
 import { useQuizStore } from '@/stores/quizStore'
-
 
 const props = defineProps<{
   question: Question
@@ -21,7 +20,7 @@ const select = (id: number) => {
       v-for="opt in question.options"
       :key="opt.id"
       @click="select(opt.id)"
-      style="cursor:pointer; margin:10px; border:1px solid #ccc; padding:10px"
+      style="cursor: pointer; margin: 10px; border: 1px solid #ccc; padding: 10px"
     >
       {{ opt.text }}
     </div>
