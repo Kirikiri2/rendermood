@@ -1,29 +1,46 @@
-import { SubmissionService } from "../services/submission.service.js";
-import { AppError } from "../errors/AppError.js";
+import prisma from "../prisma.js";
+import { sendLeadToBitrix } from "../services/bitrix.service.js";
 
-export const SubmissionController = {
-  create: async (req, res) => {
-    try {
-      const result = await SubmissionService.create(req.body);
+export const createSubmission = async (req, res) => {
+  try {
+    const { name, phone, email, comment, consent, answers } = req.body;
 
-      return res.status(201).json(result);
-    } catch (e) {
-      if (e instanceof AppError) {
-        return res.status(e.statusCode).json({
-          error: true,
-          message: e.message,
-          code: e.code,
-          details: e.details
-        });
-      }
+    // 1. создаём запись в БД
+    const submission = await prisma.submission.create({
+      data: {
+        name,
+        phone,
+        email,
+        comment,
+        consent,
+        answers: {
+          create: answers.map((a) => ({
+            questionId: a.questionId,
+            optionId: a.optionId || null,
+            value: a.value || null,
+            numberValue: a.numberValue || null,
+          })),
+        },
+      },
+      include: {
+        answers: true,
+      },
+    });
 
-      console.error("Unexpected error:", e);
+    // 2. отправляем в Bitrix
+    const bitrix = await sendLeadToBitrix(submission);
 
-      return res.status(500).json({
-        error: true,
-        message: "Internal server error",
-        code: "INTERNAL_ERROR"
-      });
-    }
+    return res.json({
+      success: true,
+      submission,
+      bitrix,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      error: "Submission failed",
+    });
   }
 };
