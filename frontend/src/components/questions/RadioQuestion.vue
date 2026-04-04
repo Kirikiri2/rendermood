@@ -11,7 +11,7 @@ const store = useQuizStore()
 const otherInput = ref('')
 
 const otherOption = computed(() =>
-  props.question.options.find((opt: Option) => opt.isOther === true)
+  props.question.options.find((opt: Option) => opt.isOther === true),
 )
 
 const selectedId = computed(() => store.answers[props.question.id]?.selected as number | undefined)
@@ -27,11 +27,15 @@ watch(
   (val) => {
     otherInput.value = val || ''
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 const selectOption = (optionId: number) => {
   store.setAnswer(props.question.id, optionId)
+
+  setTimeout(() => {
+    store.nextStep()
+  }, 300)
 }
 
 const saveOtherText = () => {

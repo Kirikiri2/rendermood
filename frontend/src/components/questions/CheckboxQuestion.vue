@@ -1,119 +1,65 @@
 <script setup lang="ts">
-import type { Question, Option, AnswerValue } from '@/shared/quiz'
 import { useQuizStore } from '@/stores/quizStore'
-import { stepConfig } from '@/config/stepConfig'
-import { usePropertyType } from '@/composables/usePropertyType'
-import { computed } from 'vue'
-import { zoneGroups } from '@/config/zoneConfig'
+import type { Question, Option } from '@/shared/quiz'
 
 const props = defineProps<{
   question: Question
-  answer?: AnswerValue 
 }>()
 
 const store = useQuizStore()
-const { propertyType } = usePropertyType()
 
-// Конфигурация текущего шага
-const config = computed(() => stepConfig[props.question.stepId] ?? {})
+// Проверка, выбран ли вариант
+const isSelected = (optionId: number): boolean => {
+  const answer = store.answers[props.question.id]
+  if (!answer?.selected) return false
+  const selected = Array.isArray(answer.selected) ? answer.selected : [answer.selected]
+  return selected.includes(optionId)
+}
 
-// Минимальное количество выбранных вариантов
-const minSelected = computed(() => config.value.minSelected ?? 1)
-
-// Фильтрация опций (особенно важно для шага 2 — по типу помещения)
-const filteredOptions = computed(() => {
-  if (props.question.stepId !== 2) {
-    return props.question.options
-  }
-
-  const type = propertyType.value
-
-  if (type === 'other') {
-    return props.question.options          // показываем все варианты
-  }
-
-  if (type === 'residential') {
-    const allowedIds = zoneGroups.residential || zoneGroups['residential']
-    return props.question.options.filter((opt: Option) => allowedIds.includes(opt.id))
-  }
-
-  if (type === 'commercial') {
-    const allowedIds = zoneGroups.commercial || zoneGroups['commercial']
-    return props.question.options.filter((opt: Option) => allowedIds.includes(opt.id))
-  }
-
-  return props.question.options
-})
-
-// Текущие выбранные значения (всегда массив)
-const selectedOptions = computed<number[]>(() => {
-  const value = store.answers[props.question.id]?.selected
-  if (value == null) return []
-  return Array.isArray(value) ? value : [value]
-})
-
-// Валидация
-const isValid = computed(() => selectedOptions.value.length >= minSelected.value)
-
-// Проверка, выбран ли конкретный вариант
-const isSelected = (id: number): boolean => selectedOptions.value.includes(id)
-
-// Переключение выбора
-const toggleOption = (id: number) => {
-  store.toggleCheckbox(props.question.id, id)
+// Обработчик клика
+const toggle = (option: Option) => {
+  console.log(`✅ Чекбокс кликну: Q${props.question.id} → Option ${option.id}`)
+  store.toggleCheckbox(props.question.id, option.id)
 }
 </script>
 
 <template>
-  <div class="checkbox-question">
+  <div class="checkbox-grid">
     <div
-      v-for="opt in filteredOptions"
-      :key="opt.id"
-      class="option-card"
-      :class="{ selected: isSelected(opt.id) }"
-      @click="toggleOption(opt.id)"
+      v-for="option in question.options"
+      :key="option.id"
+      class="checkbox-item"
+      :class="{ active: isSelected(option.id) }"
+      @click="toggle(option)"
     >
-      {{ opt.text }}
-    </div>
-
-    <!-- Сообщение об ошибке валидации -->
-    <div v-if="!isValid" class="error-message">
-      Выберите минимум {{ minSelected }} вариант{{ minSelected > 1 ? 'а' : '' }}
+      <!-- Галочка (SVG или Unicode) -->
+      <span class="checkbox-icon">{{ isSelected(option.id) ? '☑️' : '⬜' }}</span>
+      {{ option.text }}
     </div>
   </div>
 </template>
 
 <style scoped>
-.checkbox-question {
-  margin-bottom: 16px;
+.checkbox-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-
-.option-card {
-  padding: 14px 16px;
-  margin-bottom: 10px;
+.checkbox-item {
+  padding: 12px 16px;
   border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  background-color: #ffffff;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 1rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-
-.option-card:hover {
-  border-color: #9ca3af;
-  background-color: #f9fafb;
-}
-
-.option-card.selected {
-  border-color: #4ade80;
-  background-color: #f0fdf4;
+.checkbox-item:hover { border-color: #007CDD; }
+.checkbox-item.active {
+  background: #f0f9ff;
+  border-color: #007CDD;
   font-weight: 500;
 }
-
-.error-message {
-  color: #ef4444;
-  font-size: 0.95rem;
-  margin-top: 8px;
-  padding-left: 4px;
-}
+.checkbox-icon { font-size: 1.2rem; }
 </style>

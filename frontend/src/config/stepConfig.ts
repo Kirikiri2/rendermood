@@ -1,5 +1,3 @@
-// '@/config/stepConfig.ts'
-
 type StepConfig = {
   component?: 'radio' | 'checkbox' | 'input' | 'range'
   minSelected?: number
@@ -14,14 +12,13 @@ export const stepConfig: Record<number, StepConfig> = {
   1: {
     component: 'radio',
     showCustom: false,
-    showOther: true,           // ← включаем "Другое" на первом шаге
+    showOther: true,
   },
+  
+  // 🔁 ПОМЕНЯЛИ МЕСТАМИ:
+  
+  // step.id: 2 (order: 3) → должен быть ПОЛЗУНОК (Площадь)
   2: {
-    minSelected: 1,
-    showCustom: true,
-    showOther: false,
-  },
-  3: {
     component: 'range',
     min: 10,
     max: 200,
@@ -29,4 +26,16 @@ export const stepConfig: Record<number, StepConfig> = {
     showCustom: false,
     showOther: false,
   },
+  
+  // step.id: 3 (order: 2) → должны быть ЧЕКБОКСЫ (Зоны)
+  3: {
+    component: 'checkbox',
+    minSelected: 1,
+    showCustom: true,
+    showOther: false,
+  },
+  
+  4: { component: 'input', showCustom: false },
+  5: { component: 'radio', showCustom: false },
+  6: { component: 'input', showCustom: false },
 }
