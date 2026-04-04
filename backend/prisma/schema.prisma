@@ -28,6 +28,11 @@ enum StepType {
   form
 }
 
+enum PropertyType {
+  residential
+  commercial
+}
+
 //////////////////////////
 // MODELS
 //////////////////////////
@@ -51,25 +56,31 @@ model Question {
   text String
   type QuestionType
 
-  stepId   Int      @unique
-  step     Step     @relation(fields: [stepId], references: [id], onDelete: Cascade)
-  imageUrl String?
-  // варианты ответа (radio / checkbox)
-  options  Option[]
+  stepId Int  @unique
+  step   Step @relation(fields: [stepId], references: [id], onDelete: Cascade)
 
-  // настройки для slider
+  imageUrl String?
+
+  options Option[]
+
+  // базовые значения (fallback)
   min          Int?
   max          Int?
   stepValue    Int?
   defaultValue Int?
 
-  // обязательность вопроса
   isRequired Boolean @default(true)
 
   createdAt DateTime @default(now())
 
   answers Answer[]
+
+  sliderConfigs SliderConfig[]
 }
+
+//////////////////////////
+// 🔥 OPTION
+//////////////////////////
 
 model Option {
   id   Int    @id @default(autoincrement())
@@ -78,37 +89,61 @@ model Option {
   questionId Int
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
+  // 👇 ключевая логика
+  propertyType PropertyType?
+
   createdAt DateTime @default(now())
 
-  answers Answer[]
+  answers       Answer[]
+  sliderConfigs SliderConfig[]
 }
+
+//////////////////////////
+// 🔥 СЛАЙДЕР
+//////////////////////////
+
+model SliderConfig {
+  id Int @id @default(autoincrement())
+
+  // для какого вопроса (где показывается слайдер)
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  // от какого ответа зависит (Студия / Дом / Квартира)
+  optionId Int
+  option   Option @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  min  Int
+  max  Int
+  step Int
+
+  defaultValue Int?
+
+  @@unique([questionId, optionId])
+}
+
+//////////////////////////
+// SUBMISSION
+//////////////////////////
 
 model Submission {
-  id      Int     @id @default(autoincrement())
-  // КОНТАКТЫ
-  name    String // ФИО — обязательно
-  phone   String // телефон — обязательно
-  email   String // email — обязательно
+  id Int @id @default(autoincrement())
+
+  name    String
+  phone   String
+  email   String
   comment String?
 
-  // СОГЛАСИЕ
   consent Boolean
 
-  // pageUrl     String?
-  // utmSource   String?
-  // utmMedium   String?
-  // utmCampaign String?
-  // utmTerm     String?
-  // utmContent  String?
-
-  // userAgent String?
-  // ipAddress String?
-
-  // СИСТЕМА
   createdAt DateTime @default(now())
 
   answers Answer[]
 }
+
+//////////////////////////
+// ANSWER
+//////////////////////////
 
 model Answer {
   id Int @id @default(autoincrement())
@@ -116,13 +151,8 @@ model Answer {
   submissionId Int
   questionId   Int
 
-  // для radio / checkbox
-  optionId Int?
-
-  // для input
-  value String?
-
-  // для slider
+  optionId    Int?
+  value       String?
   numberValue Int?
 
   submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
