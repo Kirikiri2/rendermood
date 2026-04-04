@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { createOptionWithImage } from "../controllers/option.controller.js";
+import { uploadOptionImage } from "../controllers/option.controller.js";
 
 const router = express.Router();
 
@@ -22,6 +22,6 @@ const upload = multer({ storage });
 /* =========================
    ROUTE
 ========================= */
-router.post("/", upload.single("file"), createOptionWithImage);
+router.post("/", upload.single("file"), uploadOptionImage);
 
 export default router;
