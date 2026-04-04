@@ -1,5 +1,5 @@
 import express from "express";
-import { SubmissionController } from "../controllers/submission.controller.js";
+import { createSubmission } from "../controllers/submission.controller.js";
 
 const router = express.Router();
 /**
@@ -67,6 +67,6 @@ const router = express.Router();
  *       409:
  *         description: Duplicate email
  */
-router.post("/", SubmissionController.create);
+router.post("/", createSubmission.create);
 
 export default router;
