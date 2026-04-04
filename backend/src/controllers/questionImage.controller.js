@@ -1,16 +1,16 @@
-import { uploadImage } from "../services/storage.service.js";
-import { prisma } from "../utils/prisma.js";
-
 export const uploadQuestionImage = async (req, res, next) => {
   try {
     const file = req.file;
-    if (!file) {
-  return res.status(400).json({ message: "File is missing" });
-}
 
-if (!questionId) {
-  return res.status(400).json({ message: "questionId is missing" });
-}
+    if (!file) {
+      return res.status(400).json({ message: "File is missing" });
+    }
+
+    const questionId = req.body.questionId;
+
+    if (!questionId) {
+      return res.status(400).json({ message: "questionId is missing" });
+    }
 
     const uploaded = await uploadImage(file);
 
@@ -24,6 +24,7 @@ if (!questionId) {
 
     res.json(image);
   } catch (err) {
+    console.error(err); 
     next(err);
   }
 };
