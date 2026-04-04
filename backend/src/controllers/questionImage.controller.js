@@ -4,7 +4,13 @@ import { prisma } from "../utils/prisma.js";
 export const uploadQuestionImage = async (req, res, next) => {
   try {
     const file = req.file;
-    const questionId = Number(req.body.questionId);
+    if (!file) {
+  return res.status(400).json({ message: "File is missing" });
+}
+
+if (!questionId) {
+  return res.status(400).json({ message: "questionId is missing" });
+}
 
     const uploaded = await uploadImage(file);
 

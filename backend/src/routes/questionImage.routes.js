@@ -3,7 +3,10 @@ import multer from "multer";
 import { uploadQuestionImage } from "../controllers/questionImage.controller.js";
 
 const router = express.Router();
-const upload = multer();
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+});
 
 router.post("/upload", upload.single("file"), uploadQuestionImage);
 
