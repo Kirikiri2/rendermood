@@ -10,21 +10,22 @@ import CheckboxQuestion from '@/components/questions/CheckboxQuestion.vue'
 import RangeQuestion from '@/components/questions/RangeQuestion.vue'
 import SubmissionStep from '@/components/SubmissionStep.vue'
 import { useQuizStore } from '@/stores/quizStore'
+import CarouselQuestion from '@/components/questions/CarouselQuestion.vue'
 
 const store = useQuizStore()
 const step = computed(() => store.currentStepData)
 
+// 🔥 Исправленная карта компонентов
 const componentMap: Record<string, Component> = {
   input: InputQuestion,
   radio: RadioQuestion,
   checkbox: CheckboxQuestion,
   range: RangeQuestion,
   slider: RangeQuestion,
-  carousel: InputQuestion,
+  carousel: CarouselQuestion, // ✅ БЫЛО: InputQuestion
 }
 
-const getComponent = (question: Question): Component =>
-  componentMap[question.type] || InputQuestion
+const getComponent = (question: Question): Component => componentMap[question.type] || InputQuestion
 
 const isStepValid = computed(() => {
   if (!step.value || step.value.type !== 'question' || !step.value.question) {
@@ -39,7 +40,8 @@ const isFormValid = computed(() => {
   return (
     f.name.trim().length >= 2 &&
     /^[\d\s\+\-\(\)]{10,}$/.test(f.phone.trim()) &&
-    Array.isArray(a[2]?.selected) && a[2].selected.length > 0 &&
+    Array.isArray(a[2]?.selected) &&
+    a[2].selected.length > 0 &&
     typeof a[3]?.value === 'number' &&
     a[5]?.selected &&
     f.agree

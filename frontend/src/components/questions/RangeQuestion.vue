@@ -10,21 +10,14 @@ const store = useQuizStore()
 const questionId = computed(() => props.question.id)
 const firstStepAnswer = computed(() => store.answers[1]?.selected ?? null)
 
-// Основной диапазон
-const MIN_NORMAL = computed(() => firstStepAnswer.value === 5 ? 20 : 30)
-const MAX_NORMAL = computed(() => firstStepAnswer.value === 5 ? 60 : 200)
+// 📏 Диапазон для слайдера
+const SLIDER_MIN = computed(() => firstStepAnswer.value === 5 ? 20 : 30)
+const SLIDER_MAX = computed(() => firstStepAnswer.value === 5 ? 60 : 200)
 
-// Значения
-const value = ref<number>(50)           // для слайдера (в пределах диапазона)
-const inputBuffer = ref<string>('')     // буфер для основного инпута
-const customValue = ref<string>('')     // кастомное значение (вне диапазона)
-const isCustomMode = ref<boolean>(false) // флаг: кастомный режим активен
+// 💾 Значение (может быть любым, не только в диапазоне слайдера)
+const value = ref<number>(50)
+const inputBuffer = ref<string>('')
 const isInputFocused = ref(false)
-
-// 🔍 Проверка: значение в нормальном диапазоне?
-const isInNormalRange = (num: number): boolean => {
-  return num >= MIN_NORMAL.value && num <= MAX_NORMAL.value
-}
 
 // Инициализация
 onMounted(() => {
@@ -32,134 +25,78 @@ onMounted(() => {
   const stored = store.answers[qId]
   
   if (stored?.value !== undefined && typeof stored.value === 'number') {
-    // Восстанавливаем из store
-    if (isInNormalRange(stored.value)) {
-      value.value = stored.value
-      inputBuffer.value = String(stored.value)
-      isCustomMode.value = false
-    } else {
-      // Кастомное значение
-      value.value = MIN_NORMAL.value // слайдер сбрасываем на мин. для визуала
-      customValue.value = String(stored.value)
-      inputBuffer.value = String(stored.value)
-      isCustomMode.value = true
-    }
+    value.value = stored.value
+    inputBuffer.value = String(stored.value)
   } else if (stored?.custom) {
-    // Только кастомное (без value)
-    customValue.value = stored.custom
+    // Поддержка кастомных значений из старой логики
+    const num = Number(stored.custom)
+    value.value = isNaN(num) ? 50 : num
     inputBuffer.value = stored.custom
-    value.value = MIN_NORMAL.value
-    isCustomMode.value = true
   } else {
-    // Дефолт
     store.setRangeAnswer(qId, value.value)
     inputBuffer.value = String(value.value)
   }
 })
 
-// 🔄 Синхронизация value → store (только для нормального диапазона)
+// Сохранение в store при изменении
 watch(value, (val) => {
-  if (!isCustomMode.value && isInNormalRange(val)) {
-    store.setRangeAnswer(questionId.value, val)
-    if (!isInputFocused.value) {
-      inputBuffer.value = String(val)
-    }
+  store.setRangeAnswer(questionId.value, val)
+  if (!isInputFocused.value) {
+    inputBuffer.value = String(val)
   }
 })
 
-// 🔄 Синхронизация customValue → store
-watch(customValue, (val) => {
-  if (isCustomMode.value && val.trim()) {
-    store.setCustomRangeAnswer(questionId.value, Number(val.trim()))
-  }
-})
-
-// 🏠 Масштаб домика (только для нормального диапазона)
+// 🏠 Масштаб домика: растёт от 0.6 до 2.0, но считаем от реального значения
 const scale = computed(() => {
-  if (isCustomMode.value) return 0.6 // мин. размер для кастомного
-  const progress = (value.value - MIN_NORMAL.value) / (MAX_NORMAL.value - MIN_NORMAL.value)
-  const clamped = Math.max(0, Math.min(1, progress))
-  return 0.6 + clamped * 1.4
+  // Прогресс считаем относительно диапазона слайдера, но с "растяжкой" для кастомных
+  const clamped = Math.max(SLIDER_MIN.value, Math.min(SLIDER_MAX.value, value.value))
+  const progress = (clamped - SLIDER_MIN.value) / (SLIDER_MAX.value - SLIDER_MIN.value)
+  return 0.6 + Math.max(0, Math.min(1, progress)) * 1.4
 })
 
-// 🎯 Позиция домика
+// 🎯 Позиция домика: визуально всегда в пределах 0–100%, даже если значение вне диапазона
 const housePosition = computed(() => {
-  if (isCustomMode.value) return 100 // домик у правого края с индикатором "..."
-  const progress = (value.value - MIN_NORMAL.value) / (MAX_NORMAL.value - MIN_NORMAL.value)
+  if (value.value <= SLIDER_MIN.value) return 0
+  if (value.value >= SLIDER_MAX.value) return 100
+  const progress = (value.value - SLIDER_MIN.value) / (SLIDER_MAX.value - SLIDER_MIN.value)
   return Math.max(0, Math.min(100, progress * 100))
 })
 
-// 🎨 Цвет домика
+// 🎨 Цвет домика: меняется в диапазоне, серый — если вне
 const houseColor = computed(() => {
-  if (isCustomMode.value) return '#6b7280' // серый для кастомного
-  const progress = (value.value - MIN_NORMAL.value) / (MAX_NORMAL.value - MIN_NORMAL.value)
+  if (value.value < SLIDER_MIN.value || value.value > SLIDER_MAX.value) {
+    return '#6b7280' // серый для "нестандартного"
+  }
+  const progress = (value.value - SLIDER_MIN.value) / (SLIDER_MAX.value - SLIDER_MIN.value)
   const r = Math.round(0 + progress * 16)
   const g = Math.round(124 + progress * 61)
   const b = Math.round(221 - progress * 140)
   return `rgb(${r}, ${g}, ${b})`
 })
 
-// ✏️ Обработчик основного инпута
+// ✏️ Обработчик ввода числа
 const handleNumberInput = (e: Event) => {
   const target = e.target as HTMLInputElement
   const raw = target.value.trim()
   
-  // Разрешаем ввод: пусто или цифры
-  if (raw === '' || /^\d*$/.test(raw)) {
+  // Разрешаем: пусто, отрицательные на время ввода, или цифры
+  if (raw === '' || /^-?\d*$/.test(raw)) {
     inputBuffer.value = raw
-    
-    if (raw === '') return
+    if (raw === '' || raw === '-') return
     
     const num = Number(raw)
     if (!isNaN(num)) {
-      if (isInNormalRange(num)) {
-        // ✅ В диапазоне → обычный режим
-        isCustomMode.value = false
-        value.value = num
-        customValue.value = ''
-      } else {
-        // ❌ Вне диапазона → кастомный режим
-        isCustomMode.value = true
-        customValue.value = raw
-        // Слайдер визуально показывает "на макс." или "на мин."
-        value.value = num < MIN_NORMAL.value ? MIN_NORMAL.value : MAX_NORMAL.value
-      }
+      value.value = num // принимаем ЛЮБОЕ число
     }
   }
 }
 
-// ✏️ Обработчик кастомного инпута
-const handleCustomInput = (e: Event) => {
-  const target = e.target as HTMLInputElement
-  const raw = target.value.trim()
-  
-  if (raw === '' || /^\d*$/.test(raw)) {
-    customValue.value = raw
-    
-    // Если в кастомном ввели значение в диапазоне → выходим из кастомного режима
-    if (raw !== '') {
-      const num = Number(raw)
-      if (!isNaN(num) && isInNormalRange(num)) {
-        isCustomMode.value = false
-        value.value = num
-        inputBuffer.value = String(num)
-        customValue.value = ''
-        store.setRangeAnswer(questionId.value, num)
-      } else if (!isNaN(num)) {
-        // Всё ещё вне диапазона → сохраняем как кастомное
-        store.setCustomRangeAnswer(questionId.value, num)
-      }
-    }
-  }
-}
-
-// Фокус/блюр для основного инпута
+// Фокус/блюр
 const handleFocus = () => { isInputFocused.value = true }
 const handleBlur = () => {
   isInputFocused.value = false
-  // Если пусто — восстанавливаем текущее значение
-  if (inputBuffer.value === '') {
-    inputBuffer.value = isCustomMode.value ? customValue.value : String(value.value)
+  if (inputBuffer.value === '' || inputBuffer.value === '-') {
+    inputBuffer.value = String(value.value)
   }
 }
 </script>
@@ -171,7 +108,6 @@ const handleBlur = () => {
     <div class="house-wrapper">
       <div 
         class="house" 
-        :class="{ 'house--custom': isCustomMode }"
         :style="{ 
           left: `${housePosition}%`,
           transform: `translateX(-50%) scale(${scale})` 
@@ -182,8 +118,8 @@ const handleBlur = () => {
           <div class="door"></div>
           <div class="window"></div>
         </div>
-        <!-- Индикатор "..." для кастомного значения -->
-        <span v-if="isCustomMode" class="house-badge">⋯</span>
+        <!-- Индикатор, если значение вне диапазона -->
+        <span v-if="value < SLIDER_MIN || value > SLIDER_MAX" class="house-badge">!</span>
       </div>
       <div 
         class="house-arrow" 
@@ -194,72 +130,45 @@ const handleBlur = () => {
       ></div>
     </div>
 
-    <!-- 🎚️ Слайдер -->
+    <!-- 🎚️ Слайдер (всегда в пределах диапазона) -->
     <input
       type="range"
-      :min="MIN_NORMAL"
-      :max="MAX_NORMAL"
+      :min="SLIDER_MIN"
+      :max="SLIDER_MAX"
       step="1"
       v-model.number="value"
-      :disabled="isCustomMode"
       class="slider"
-      :class="{ 'slider--custom': isCustomMode }"
     />
 
-    <!-- 🔢 Основной инпут + кастомный режим -->
+    <!-- 🔢 Значение + инпут -->
     <div class="value-controls">
-      
-      <!-- Отображение текущего значения -->
-      <div class="value-display" :class="{ 'value-display--custom': isCustomMode }">
-        <span class="value-number">{{ isCustomMode ? customValue || '—' : value }}</span>
+      <div class="value-display">
+        <span class="value-number">{{ value }}</span>
         <span class="value-unit">м²</span>
       </div>
       
-      <!-- Основной инпут (всегда видим) -->
       <div class="input-wrapper">
         <input
           type="text"
           inputmode="numeric"
-          pattern="[0-9]*"
+          pattern="-?[0-9]*"
           :value="inputBuffer"
           @input="handleNumberInput"
           @focus="handleFocus"
           @blur="handleBlur"
           class="number-input"
-          :class="{ 'number-input--custom': isCustomMode }"
           placeholder="введите"
         />
         <span class="input-unit">м²</span>
       </div>
     </div>
 
-    <!-- 🔥 Кастомный инпут (появляется при выходе за диапазон) -->
-    <Transition name="slide">
-      <div v-if="isCustomMode" class="custom-input-block">
-        <label class="custom-input-label">
-          <span>Ваше значение:</span>
-          <div class="custom-input-wrapper">
-            <input
-              type="text"
-              inputmode="numeric"
-              pattern="[0-9]*"
-              v-model="customValue"
-              @input="handleCustomInput"
-              class="custom-input"
-              placeholder="например, 250"
-            />
-            <span class="custom-input-unit">м²</span>
-          </div>
-        </label>
-        <p class="custom-input-hint">
-          Укажите площадь, если она не входит в диапазон {{ MIN_NORMAL }}–{{ MAX_NORMAL }} м²
-        </p>
-      </div>
-    </Transition>
-
-    <!-- 💡 Подсказка диапазона -->
-    <div class="range-hint" :class="{ 'range-hint--hidden': isCustomMode }">
-      Стандартный диапазон: от {{ MIN_NORMAL }} до {{ MAX_NORMAL }} м²
+    <!-- 💡 Подсказка -->
+    <div class="range-hint">
+      Рекомендованный диапазон: {{ SLIDER_MIN }}–{{ SLIDER_MAX }} м²
+      <span v-if="value < SLIDER_MIN || value > SLIDER_MAX" class="hint-custom">
+        • Вы ввели нестандартное значение
+      </span>
     </div>
 
   </div>
@@ -289,19 +198,15 @@ const handleBlur = () => {
   transform-origin: bottom center;
   pointer-events: none;
   transition: transform 0.15s ease-out, opacity 0.2s;
-  will-change: transform;
+  will-change: transform, left;
 }
 
-.house--custom {
-  opacity: 0.7;
-}
-
-/* Бейдж "..." для кастомного режима */
+/* Бейдж "!" для нестандартных значений */
 .house-badge {
   position: absolute;
   top: -8px;
   right: -12px;
-  background: #6b7280;
+  background: #ef4444;
   color: white;
   font-size: 0.75rem;
   font-weight: bold;
@@ -312,6 +217,12 @@ const handleBlur = () => {
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
 
 /* 🔻 Стрелочка */
@@ -322,7 +233,7 @@ const handleBlur = () => {
   height: 20px;
   transform: translateX(-50%);
   opacity: 0.7;
-  transition: background 0.2s, opacity 0.2s;
+  transition: background 0.2s;
 }
 
 /* Крыша */
@@ -352,10 +263,6 @@ const handleBlur = () => {
   transition: border-color 0.2s, background 0.2s;
 }
 
-.house--custom .body {
-  background: #f9fafb;
-}
-
 .door {
   width: 12px;
   height: 18px;
@@ -381,22 +288,6 @@ const handleBlur = () => {
   outline: none;
   -webkit-appearance: none;
   cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.slider:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.slider--custom {
-  background: repeating-linear-gradient(
-    45deg,
-    #e5e7eb,
-    #e5e7eb 10px,
-    #d1d5db 10px,
-    #d1d5db 20px
-  );
 }
 
 .slider::-webkit-slider-thumb {
@@ -408,12 +299,12 @@ const handleBlur = () => {
   border-radius: 50%;
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
   cursor: grab;
-  transition: transform 0.1s, box-shadow 0.1s;
+  transition: transform 0.1s;
 }
 
-.slider:disabled::-webkit-slider-thumb {
-  cursor: not-allowed;
-  background: #9ca3af;
+.slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
 }
 
 .slider::-moz-range-thumb {
@@ -442,11 +333,6 @@ const handleBlur = () => {
   gap: 4px;
   font-weight: 600;
   color: #1f2937;
-  transition: color 0.2s;
-}
-
-.value-display--custom {
-  color: #6b7280;
 }
 
 .value-number {
@@ -460,7 +346,7 @@ const handleBlur = () => {
   font-weight: 400;
 }
 
-/* ✏️ Основной инпут */
+/* ✏️ Инпут */
 .input-wrapper {
   display: flex;
   align-items: center;
@@ -478,7 +364,7 @@ const handleBlur = () => {
 }
 
 .number-input {
-  width: 60px;
+  width: 70px;
   border: none;
   background: transparent;
   font-size: 1rem;
@@ -487,10 +373,6 @@ const handleBlur = () => {
   text-align: right;
   outline: none;
   -moz-appearance: textfield;
-}
-
-.number-input--custom {
-  color: #6b7280;
 }
 
 .number-input::-webkit-outer-spin-button,
@@ -505,94 +387,18 @@ const handleBlur = () => {
   font-weight: 400;
 }
 
-/* 🔥 Кастомный блок */
-.custom-input-block {
-  width: 100%;
-  max-width: 400px;
-  padding: 12px 16px;
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
-  border-radius: 12px;
-  animation: slideIn 0.2s ease-out;
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.custom-input-label {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 0.875rem;
-  color: #92400e;
-  font-weight: 500;
-}
-
-.custom-input-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: white;
-  border: 2px solid #fcd34d;
-  border-radius: 8px;
-  padding: 8px 12px;
-}
-
-.custom-input {
-  flex: 1;
-  min-width: 80px;
-  border: none;
-  background: transparent;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #92400e;
-  outline: none;
-  -moz-appearance: textfield;
-}
-
-.custom-input::-webkit-outer-spin-button,
-.custom-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.custom-input-unit {
-  font-size: 0.875rem;
-  color: #b45309;
-  font-weight: 400;
-}
-
-.custom-input-hint {
-  margin-top: 6px;
-  font-size: 0.75rem;
-  color: #b45309;
-  line-height: 1.4;
-}
-
-/* 💡 Подсказка диапазона */
+/* 💡 Подсказка */
 .range-hint {
   font-size: 0.875rem;
   color: #9ca3af;
   text-align: center;
-  transition: opacity 0.2s;
 }
 
-.range-hint--hidden {
-  opacity: 0;
-  height: 0;
-  margin: 0;
-  overflow: hidden;
-}
-
-/* 🎬 Анимация появления */
-.slide-enter-active, .slide-leave-active {
-  transition: all 0.2s ease;
-}
-.slide-enter-from, .slide-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
+.hint-custom {
+  display: block;
+  color: #ef4444;
+  font-weight: 500;
+  margin-top: 2px;
 }
 
 /* 📱 Адаптив */
@@ -601,21 +407,8 @@ const handleBlur = () => {
     flex-direction: column;
     gap: 8px;
   }
-  
-  .value-number {
-    font-size: 1.5rem;
-  }
-  
-  .house-wrapper {
-    height: 80px;
-  }
-  
-  .slider {
-    max-width: 100%;
-  }
-  
-  .custom-input-block {
-    max-width: 100%;
-  }
+  .value-number { font-size: 1.5rem; }
+  .house-wrapper { height: 80px; }
+  .slider { max-width: 100%; }
 }
 </style>
