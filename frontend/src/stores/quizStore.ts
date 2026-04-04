@@ -14,8 +14,9 @@ export const useQuizStore = defineStore('quiz', {
 
   actions: {
     async fetchSteps() {
-      const res = await fetch('http://localhost:3000/api/steps')
+      const res = await fetch('https://rendermood.onrender.com/api/steps')
       this.steps = await res.json()
+      console.log(this.steps)
     },
 
     setAnswer(questionId: number, value: number | string) {

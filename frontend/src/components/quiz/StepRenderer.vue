@@ -31,6 +31,7 @@ const getQuestionComponent = (question: Question): Component => {
     <h2>{{ step.title }}</h2>
 
     <component
+      v-if="step.type === 'question' && step.question"
       :is="getQuestionComponent(step.question)"
       :question="step.question"
     />

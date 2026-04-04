@@ -16,18 +16,19 @@ export interface Question {
   options: Option[]
 }
 
-export interface Step {
+export type Step = {
   id: number
   title: string
   order: number
-  question: Question
+  type: 'question' | 'form' 
+  question?: Question
 }
 
 export type AnswerValue = {
   selected?: number | number[] // для radio / checkbox
   value?: number // для range
   custom?: string // для input / доп. поля
-  otherText?: string 
+  otherText?: string
 }
 
 export type Answers = Record<number, AnswerValue>
