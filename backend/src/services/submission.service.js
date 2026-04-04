@@ -1,4 +1,5 @@
 import { prisma } from "../utils/prisma.js";
+import { BitrixService } from "./bitrix.service.js";
 
 export const SubmissionService = {
   create: async (data) => {
@@ -25,7 +26,7 @@ export const SubmissionService = {
       );
     }
 
-    // 4. проверка на лишние ответы (очень важно)
+    // 4. проверка на лишние ответы
     const extra = answeredIds.filter(
       id => !questionIds.includes(id)
     );
@@ -35,21 +36,23 @@ export const SubmissionService = {
         `Invalid questionIds: ${extra.join(", ")}`
       );
     }
+
+    // 5. проверка на дубликат
     const existing = await prisma.submission.findFirst({
-    where: {
+      where: {
         OR: [
-            { email },
-            { phone }
-            ]
-        }
+          { email },
+          { phone }
+        ]
+      }
     });
 
     if (existing) {
-        throw new Error("You already submitted this form");
+      throw new Error("You already submitted this form");
     }
 
-    // 5. создаём submission
-    return prisma.submission.create({
+    // 6. сохраняем в БД
+    const submission = await prisma.submission.create({
       data: {
         name,
         phone,
@@ -66,5 +69,15 @@ export const SubmissionService = {
         answers: true
       }
     });
+
+    // 7. отправка в Bitrix (НЕ ломает основной флоу)
+    await BitrixService.createLead({
+      name,
+      phone,
+      email,
+      answers
+    });
+
+    return submission;
   }
 };
