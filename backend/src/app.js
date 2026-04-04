@@ -17,35 +17,21 @@ app.use(cors({ origin: "*" }));
 app.use(helmet());
 app.use(express.json());
 
-/* =========================
-   CREATE UPLOADS FOLDER (FIX)
-========================= */
 const uploadsDir = path.resolve("uploads");
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
 
-/* =========================
-   STATIC FILES (uploads)
-========================= */
+
 app.use("/uploads", express.static(uploadsDir));
 
-/* =========================
-   SWAGGER
-========================= */
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-/* =========================
-   ROUTES
-========================= */
 app.use("/api/steps", stepRoutes);
 app.use("/api/submissions", submissionRoutes);
 app.use("/api/options", optionRoutes);
 
-/* =========================
-   HEALTHCHECK
-========================= */
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
