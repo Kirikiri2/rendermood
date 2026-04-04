@@ -1,5 +1,5 @@
 import { uploadImage } from "../services/storage.service.js";
-import prisma from "../utils/prisma.js";
+import { prisma } from "../utils/prisma.js";
 
 export const uploadQuestionImage = async (req, res, next) => {
   try {
