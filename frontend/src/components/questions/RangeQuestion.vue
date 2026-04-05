@@ -200,104 +200,14 @@ const handleBlur = () => {
 </template>
 
 <style scoped>
-/* =========================================
-   1. OVERLAY (Стандартный)
-   ========================================= */
-.quiz-overlay {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-  box-sizing: border-box;
-}
+@import '@/assets/quiz_layout.css';
 
 /* =========================================
-   2. SHEET (Стандартный)
-   ========================================= */
-.quiz-sheet {
-  position: relative;
-  width: 95vw;
-  max-width: 1050px;
-  height: 80vh;
-  min-height: 600px;
-  background: #FFFFFF;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  font-family: 'Inter', system-ui, sans-serif;
-  z-index: 1;
-}
-
-/* =========================================
-   3. SHADOW LAYER (Стандартный)
-   ========================================= */
-.quiz-sheet__shadow-layer {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: #B3D4F0;
-  border-radius: 8px;
-  transform: translate(20px, 20px);
-  z-index: 0;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-}
-
-/* =========================================
-   4. HEADER (Стандартный)
-   ========================================= */
-.sheet-header {
-  border-radius: 8px 8px 0 0;
-  z-index: 1;
-  padding: 40px 50px 20px;
-  position: relative;
-  flex-shrink: 0;
-  background: #FFFFFF;
-}
-
-.progress-bar {
-  position: absolute;
-  top: 20px; left: 50px;
-  width: 250px;
-  height: 6px;
-  background: #3B82F6;
-  border-radius: 2px;
-}
-
-.sheet-title {
-  margin: 0;
-  font-size: 32px;
-  font-weight: 800;
-  color: #111827;
-  line-height: 1.2;
-}
-
-/* =========================================
-   5. BODY (Центрирование контента)
-   ========================================= */
-.sheet-body {
-  z-index: 1;
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 50px;
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* Центрируем слайдер */
-  justify-content: center;
-  background: #FFFFFF;
-}
-
-/* =========================================
-   6. RANGE UI (Стили слайдера)
+   1. RANGE UI (Стили слайдера)
    ========================================= */
 .range-container {
   width: 100%;
-  max-width: 800px; /* Широкий слайдер как на картинке */
+  max-width: 800px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -309,8 +219,8 @@ const handleBlur = () => {
 .house-wrapper {
   position: relative;
   width: 100%;
-  height: 80px; /* Место для домика над полосой */
-  margin-bottom: -10px; /* Накладываем на слайдер */
+  height: 80px;
+  margin-bottom: -10px;
   z-index: 10;
 }
 
@@ -318,11 +228,11 @@ const handleBlur = () => {
 .house {
   position: absolute;
   bottom: 0;
-  transform: translateX(-50%); /* Центрируем относительно точки */
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: left 0.1s linear; /* Плавное движение */
+  transition: left 0.1s linear;
 }
 
 /* Крыша */
@@ -380,27 +290,21 @@ const handleBlur = () => {
 .custom-slider {
   -webkit-appearance: none;
   width: 100%;
-  height: 8px; /* Толщина полосы */
+  height: 8px;
   border-radius: 4px;
   outline: none;
   cursor: pointer;
-  background: #E0F2FE; /* Цвет пустой части */
+  background: #E0F2FE;
 }
 
-/* Бегунок (Скрываем стандартный, так как у нас есть домик) */
 .custom-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 0;
-  height: 0;
-  opacity: 0;
+  width: 0; height: 0; opacity: 0;
 }
 
 .custom-slider::-moz-range-thumb {
-  width: 0;
-  height: 0;
-  border: none;
-  opacity: 0;
+  width: 0; height: 0; border: none; opacity: 0;
 }
 
 /* 🔢 Крупное значение */
@@ -413,7 +317,7 @@ const handleBlur = () => {
 }
 
 .value-number {
-  font-size: 64px; /* Огромная цифра */
+  font-size: 64px;
   font-weight: 800;
   color: #3B82F6;
   line-height: 1;
@@ -450,59 +354,19 @@ const handleBlur = () => {
 }
 
 /* =========================================
-   7. FOOTER (Стандартный)
-   ========================================= */
-.sheet-footer {
-  border-radius: 0 0 8px 8px;
-  z-index: 1;
-  height: 80px;
-  background-color: #F0F9FF;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 50px;
-  flex-shrink: 0;
-}
-
-.nav-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 20px;
-  font-weight: 600;
-  color: #111827;
-  padding: 10px 20px;
-  border-radius: 8px;
-  transition: background 0.2s;
-}
-
-.nav-btn:hover { background: rgba(0, 0, 0, 0.05); }
-
-/* =========================================
-   АДАПТИВ
+   2. АДАПТИВ (ТОЛЬКО ДЛЯ КОМПОНЕНТА)
    ========================================= */
 @media (max-width: 768px) {
-  .quiz-sheet {
-    height: 100vh;
-    width: 100vw;
-    border-radius: 0;
-    max-height: none;
-  }
-  .quiz-sheet__shadow-layer { display: none; }
-  .sheet-header { padding: 25px 20px 15px; }
-  .sheet-title { font-size: 24px; }
-  .progress-bar { left: 20px; width: 150px !important; }
-  .sheet-body { padding: 20px; }
-  
   .value-number { font-size: 48px; }
   .value-unit { font-size: 18px; }
-  
-  .house { transform: translateX(-50%) scale(0.8); } /* Уменьшаем домик на мобилках */
-  
-  .sheet-footer { padding: 0 20px; height: 70px; }
-  .nav-btn { font-size: 18px; }
+  .house { transform: translateX(-50%) scale(0.8); }
+  .manual-input { padding: 10px 14px; font-size: 16px; }
+}
+
+@media (max-width: 374px) {
+  .value-number { font-size: 36px; }
+  .value-unit { font-size: 14px; }
+  .house { transform: translateX(-50%) scale(0.7); }
+  .range-container { gap: 24px; }
 }
 </style>

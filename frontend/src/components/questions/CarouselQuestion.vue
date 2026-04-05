@@ -213,123 +213,9 @@ const handleImageError = (e: Event) => {
 </template>
 
 <style scoped>
+@import '@/assets/quiz_layout.css';
 /* =========================================
-   1. OVERLAY
-   ========================================= */
-.quiz-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-/* =========================================
-   2. SHEET
-   ========================================= */
-.quiz-sheet {
-  position: relative;
-  width: 95vw;
-  max-width: 1050px;
-  height: 85vh;
-  min-height: 600px;
-  max-height: 750px;
-  background: #FFFFFF;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  font-family: 'Inter', system-ui, sans-serif;
-  z-index: 1;
-}
-
-/* =========================================
-   3. SHADOW LAYER
-   ========================================= */
-.quiz-sheet__shadow-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #B3D4F0;
-  border-radius: 8px;
-  transform: translate(20px, 20px);
-  z-index: 0;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-}
-
-/* =========================================
-   4. HEADER
-   ========================================= */
-.sheet-header {
-  border-radius: 8px 8px 0 0;
-  z-index: 1;
-  padding: 40px 50px 20px;
-  position: relative;
-  flex-shrink: 0;
-  background: #FFFFFF;
-}
-
-.progress-bar {
-  position: absolute;
-  top: 20px;
-  left: 50px;
-  width: 250px;
-  height: 6px;
-  background: #3B82F6;
-  border-radius: 2px;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sheet-title {
-  margin: 0;
-  font-size: 32px;
-  font-weight: 800;
-  color: #111827;
-  line-height: 1.2;
-}
-
-/* =========================================
-   5. BODY
-   ========================================= */
-.sheet-body {
-  z-index: 1;
-  flex: 1;
-  overflow-y: auto;
-  padding: 30px 50px;
-  display: flex;
-  flex-direction: column;
-  background: #FFFFFF;
-  gap: 20px;
-
-  scrollbar-width: thin;
-  scrollbar-color: #CBD5E1 #F1F5F9;
-}
-
-.sheet-body::-webkit-scrollbar {
-  width: 8px;
-}
-
-.sheet-body::-webkit-scrollbar-track {
-  background: #F1F5F9;
-  border-radius: 4px;
-}
-
-.sheet-body::-webkit-scrollbar-thumb {
-  background-color: #94A3B8;
-  border-radius: 4px;
-}
-
-/* =========================================
-   6. CAROUSEL SCROLL (ГОРИЗОНТАЛЬНЫЙ СКРОЛЛ)
+   1. CAROUSEL SCROLL (ГОРИЗОНТАЛЬНЫЙ СКРОЛЛ)
    ========================================= */
 .carousel-scroll {
   display: flex;
@@ -340,17 +226,14 @@ const handleImageError = (e: Event) => {
   padding: 10px 5px 20px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  /* Скрыть скроллбар Firefox */
 }
 
 .carousel-scroll::-webkit-scrollbar {
   display: none;
-  /* Скрыть скроллбар Chrome/Safari */
 }
 
 .carousel-item {
   flex: 0 0 280px;
-  /* Фиксированная ширина карточки */
   scroll-snap-align: center;
   cursor: pointer;
   opacity: 0.6;
@@ -456,7 +339,7 @@ const handleImageError = (e: Event) => {
 }
 
 /* =========================================
-   7. VALIDATION
+   2. VALIDATION & ANIMATIONS
    ========================================= */
 .validation-msg {
   color: #EF4444;
@@ -472,53 +355,6 @@ const handleImageError = (e: Event) => {
   height: 20px;
 }
 
-/* =========================================
-   8. FOOTER
-   ========================================= */
-.sheet-footer {
-  border-radius: 0 0 8px 8px;
-  z-index: 1;
-  height: 80px;
-  background-color: #F0F9FF;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 50px;
-  flex-shrink: 0;
-}
-
-.nav-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 20px;
-  font-weight: 600;
-  color: #111827;
-  padding: 10px 20px;
-  border-radius: 8px;
-  transition: background 0.2s;
-}
-
-.nav-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.nav-btn.btn-disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  color: #9CA3AF;
-}
-
-.nav-btn.btn-disabled:hover {
-  background: none;
-}
-
-/* =========================================
-   9. ANIMATIONS
-   ========================================= */
 .slide-enter-active,
 .slide-leave-active {
   transition: all 0.3s ease;
@@ -531,91 +367,29 @@ const handleImageError = (e: Event) => {
 }
 
 /* =========================================
-   АДАПТИВ
+   3. АДАПТИВ (ТОЛЬКО ДЛЯ КОМПОНЕНТА)
    ========================================= */
 @media (max-width: 768px) {
-  .quiz-sheet {
-    height: 100vh;
-    width: 100vw;
-    border-radius: 0;
-    max-height: none;
-  }
-
-  .quiz-sheet__shadow-layer {
-    display: none;
-  }
-
-  .sheet-header {
-    padding: 25px 20px 15px;
-  }
-
-  .sheet-title {
-    font-size: 22px;
-  }
-
-  .progress-bar {
-    left: 20px;
-    width: 150px !important;
-  }
-
-  .sheet-body {
-    padding: 20px;
-  }
-
   .carousel-item {
     flex: 0 0 240px;
-    /* Меньше на мобильных */
   }
-
   .image-wrapper {
     height: 280px;
   }
-
   .slide-title {
     font-size: 16px;
-  }
-
-  .sheet-footer {
-    padding: 0 20px;
-    height: 70px;
-  }
-
-  .nav-btn {
-    font-size: 17px;
-    padding: 8px 14px;
   }
 }
 
 @media (max-width: 374px) {
   .carousel-item {
     flex: 0 0 200px;
-    /* Ещё меньше на маленьких экранах */
   }
-
   .image-wrapper {
     height: 240px;
   }
-
   .slide-title {
     font-size: 14px;
-  }
-
-  .sheet-header {
-    padding: 20px 15px 12px;
-  }
-
-  .sheet-title {
-    font-size: 18px;
-  }
-
-  .sheet-footer {
-    padding: 0 15px;
-    height: 60px;
-  }
-
-  .nav-btn {
-    font-size: 15px;
-    padding: 6px 12px;
   }
 }
 </style>
