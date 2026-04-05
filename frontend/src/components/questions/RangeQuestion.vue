@@ -286,7 +286,6 @@ const handleBlur = () => {
   background: #e5e7eb;
   border-radius: 3px;
   outline: none;
-  -webkit-appearance: none;
   cursor: pointer;
 }
 
@@ -372,7 +371,6 @@ const handleBlur = () => {
   color: #1f2937;
   text-align: right;
   outline: none;
-  -moz-appearance: textfield;
 }
 
 .number-input::-webkit-outer-spin-button,
