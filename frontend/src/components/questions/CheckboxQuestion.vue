@@ -1,4 +1,3 @@
-<!-- components/questions/CheckboxQuestion.vue -->
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { Question, Option } from '@/shared/quiz'
@@ -8,22 +7,20 @@ const props = defineProps<{ question: Question }>()
 const store = useQuizStore()
 const customValue = ref('')
 
-// 🔍 Ответ с шага 1 (тип объекта)
-const firstStepAnswer = computed(() => store.answers[1])
+// 🔍 Определяем выбранный propertyType из шага 1
 const selectedPropertyType = computed<'residential' | 'commercial' | null>(() => {
-  const ans = firstStepAnswer.value
-  if (!ans?.selected) return null
-  
-  // Находим выбранную опцию и её propertyType
-  const step1 = store.steps.find(s => s.question?.id === 1)?.question
-  const selectedOpt = step1?.options?.find(o => o.id === ans.selected)
+  const answer = store.answers[1]
+  if (!answer?.selected) return null
+
+  const step1 = store.steps.find((s) => s.question?.id === 1)?.question
+  const selectedOpt = step1?.options?.find((o) => o.id === answer.selected)
   return selectedOpt?.propertyType ?? null
 })
 
 // Текущий ответ на этот вопрос
 const currentAnswer = computed(() => store.answers[props.question.id] || {})
 const selectedIds = computed<number[]>(() =>
-  Array.isArray(currentAnswer.value.selected) ? currentAnswer.value.selected : []
+  Array.isArray(currentAnswer.value.selected) ? currentAnswer.value.selected : [],
 )
 
 // 🔍 Опция "Другое"
@@ -31,29 +28,31 @@ const isOtherOption = (opt: Option) =>
   opt.text.toLowerCase().includes('другое') || opt.text.toLowerCase().includes('other')
 
 const otherOption = computed(() => props.question.options?.find(isOtherOption))
-const isOtherSelected = computed(() =>
-  otherOption.value && selectedIds.value.includes(otherOption.value.id)
+const isOtherSelected = computed(
+  () => otherOption.value && selectedIds.value.includes(otherOption.value.id),
 )
 
-// 🎯 Фильтрация опций по propertyType
+// 🎯 ФИЛЬТРАЦИЯ: показываем только подходящие по propertyType + универсальные
 const visibleOptions = computed(() => {
   const options = props.question.options || []
-  
-  // Если тип объекта не определён или выбрано "Другое" → показываем всё
+
+  // Если тип не выбран или "Другое" → показываем ВСЕ
   if (!selectedPropertyType.value) {
     return options
   }
-  
-  // Фильтруем: показываем совпадающие по типу + опции без типа (универсальные)
-  return options.filter(opt => 
-    opt.propertyType === selectedPropertyType.value || !opt.propertyType
+
+  // Фильтруем: совпадающий тип ИЛИ без типа (универсальные)
+  return options.filter(
+    (opt) => opt.propertyType === selectedPropertyType.value || !opt.propertyType,
   )
 })
-
-// Восстановление кастомного значения
-watch(() => currentAnswer.value?.custom, (val) => {
-  if (val) customValue.value = val
-}, { immediate: true })
+watch(
+  () => currentAnswer.value?.custom,
+  (val) => {
+    if (val) customValue.value = val
+  },
+  { immediate: true },
+)
 
 // Переключение чекбокса
 const toggleOption = (optionId: number) => {
@@ -67,44 +66,36 @@ const updateCustom = (e: Event) => {
   store.setCustomInput(props.question.id, val)
 }
 
-// Валидация: пусто ли
+// Валидация
 const isEmpty = computed(() => selectedIds.value.length === 0)
-
-// 🔍 Отладка (можно убрать в продакшене)
-// console.log(`[Checkbox Q${props.question.id}] Тип объекта:`, selectedPropertyType.value)
-// console.log(`[Checkbox Q${props.question.id}] Видимо опций:`, visibleOptions.value.length)
 </script>
 
-
-
-
 <template>
-  <!-- 1. ЗАТЕМНЕННЫЙ ФОН (Оверлей) -->
   <div class="quiz-overlay">
-    
-    <!-- 2. БЛАНК (1200px x 770px) -->
     <div class="quiz-sheet">
-      
-      <!-- ЭФФЕКТ ДВОЙНОЙ КАРТОЧКИ (Светло-голубая подложка сзади) -->
       <div class="quiz-sheet__shadow-layer"></div>
-      
-      <!-- ВЕРХНЯЯ ЧАСТЬ (Заголовок + прогресс-бар) -->
+
       <header class="sheet-header">
         <div class="progress-bar"></div>
         <h2 class="sheet-title">{{ question.text }}</h2>
       </header>
 
-      <!-- СКРОЛЛИРУЕМАЯ ЗОНА -->
       <main class="sheet-body">
+        <!-- Подсказка о фильтре (опционально) -->
+        <p v-if="selectedPropertyType" class="filter-hint">
+          Показаны зоны для:
+          {{ selectedPropertyType === 'residential' ? 'жилого' : 'коммерческого' }} помещения
+        </p>
+
         <div class="options-grid">
-          <label 
-            v-for="option in question.options" 
+          <label
+            v-for="option in visibleOptions"
             :key="option.id"
             class="option-card"
             :class="[
               { 'is-selected': selectedIds.includes(option.id) },
-              { 'is-invalid': isEmpty },
-              { 'is-full-width': isOtherOption(option) }
+              { 'is-invalid': isEmpty && !selectedIds.includes(option.id) },
+              { 'is-full-width': isOtherOption(option) },
             ]"
           >
             <input
@@ -117,7 +108,7 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
           </label>
         </div>
 
-        <!-- Блок "Другое" (если выбран) -->
+        <!-- Блок "Другое" -->
         <div v-if="isOtherSelected" class="other-input-area animate-fade-in">
           <input
             v-model="customValue"
@@ -128,39 +119,57 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
             :class="{ 'input-error': !customValue.trim() }"
             autofocus
           />
-          <p v-if="!customValue.trim()" class="error-text">
+          <p v-if="isOtherSelected && !customValue.trim()" class="error-text">
             ⚠️ Пожалуйста, укажите название зоны
           </p>
         </div>
 
         <!-- Сообщение об ошибке валидации -->
         <Transition name="slide">
-          <p v-if="isEmpty" class="validation-msg">
+          <p v-if="isEmpty && visibleOptions.length" class="validation-msg">
             <svg class="icon-warn" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
             Выберите хотя бы один вариант
           </p>
         </Transition>
+
+        <!-- Если после фильтрации ничего не осталось -->
+        <p v-if="!visibleOptions.length" class="empty-state">
+          ⚠️ Для выбранного типа помещения нет доступных зон
+        </p>
       </main>
 
-      <!-- ПОДВАЛ (Навигация) -->
       <footer class="sheet-footer">
-        <!-- Кнопка НАЗАД -->
-        <button 
-          type="button" 
+        <button
+          type="button"
           class="nav-btn btn-back"
           @click="store.prevStep"
-          :disabled="store.currentStep === 0" 
-          :style="{ opacity: store.currentStep === 0 ? 0.5 : 1, cursor: store.currentStep === 0 ? 'default' : 'pointer' }"
+          :disabled="store.currentStep === 0"
+          :style="{
+            opacity: store.currentStep === 0 ? 0.5 : 1,
+            cursor: store.currentStep === 0 ? 'default' : 'pointer',
+          }"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
         </button>
 
-        <!-- Кнопка ДАЛЕЕ -->
-        <button 
-          type="button" 
+        <button
+          type="button"
           class="nav-btn btn-next"
           :class="{ 'btn-disabled': isEmpty }"
           :disabled="isEmpty"
@@ -169,7 +178,6 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
           Далее
         </button>
       </footer>
-
     </div>
   </div>
 </template>
@@ -180,8 +188,10 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
    ========================================= */
 .quiz-overlay {
   position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   background: rgba(0, 0, 0, 0.5); /* Чуть светлее, чтобы подложка была видна */
   backdrop-filter: blur(4px);
   display: flex;
@@ -197,9 +207,9 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
    ========================================= */
 .quiz-sheet {
   position: relative;
-  width: 1050px; 
-  height: 705px; 
-  background: #FFFFFF;
+  width: 1050px;
+  height: 705px;
+  background: #ffffff;
   border-radius: 5px; /* Твой радиус */
   display: flex;
   flex-direction: column;
@@ -217,7 +227,7 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
   left: 0;
   width: 100%;
   height: 100%;
-  background: #B3D4F0;
+  background: #b3d4f0;
   border-radius: 5px; /* Твой радиус */
   transform: translate(20px, 20px); /* Твое смещение */
   z-index: 0;
@@ -232,15 +242,16 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
   padding: 40px 50px 20px;
   position: relative;
   flex-shrink: 0;
-  background: #FFFFFF;
+  background: #ffffff;
 }
 
 .progress-bar {
   position: absolute;
-  top: 20px; left: 50px;
+  top: 20px;
+  left: 50px;
   width: 200px;
   height: 6px;
-  background: #3B82F6;
+  background: #3b82f6;
   border-radius: 2px 2px 2px 2px;
 }
 
@@ -263,21 +274,21 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: #FFFFFF;
-  
+  background: #ffffff;
+
   scrollbar-width: thin;
-  scrollbar-color: #CBD5E1 #F1F5F9;
+  scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
 .sheet-body::-webkit-scrollbar {
   width: 8px;
 }
 .sheet-body::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: #f1f5f9;
   border-radius: 4px;
 }
 .sheet-body::-webkit-scrollbar-thumb {
-  background-color: #94A3B8;
+  background-color: #94a3b8;
   border-radius: 4px;
 }
 
@@ -291,10 +302,14 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
 }
 
 @media (max-width: 900px) {
-  .options-grid { grid-template-columns: repeat(2, 1fr); }
+  .options-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 @media (max-width: 600px) {
-  .options-grid { grid-template-columns: 1fr; }
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* =========================================
@@ -302,7 +317,7 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
    ========================================= */
 .option-card {
   position: relative;
-  background-color: #F0F7FF;
+  background-color: #f0f7ff;
   border: 2px solid transparent;
   border-radius: 10px;
   padding: 20px;
@@ -315,13 +330,13 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
 }
 
 .option-card:hover {
-  background-color: #E1EEFF;
+  background-color: #e1eeff;
   transform: translateY(-2px);
 }
 
 .option-card.is-selected {
-  background-color: #3B82F6;
-  color: #FFFFFF;
+  background-color: #3b82f6;
+  color: #ffffff;
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
@@ -357,25 +372,25 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
   width: 100%;
   padding: 16px 20px;
   font-size: 18px;
-  border: 2px solid #E2E8F0;
+  border: 2px solid #e2e8f0;
   border-radius: 10px;
   outline: none;
   transition: border-color 0.2s;
-  background: #F8FAFC;
+  background: #f8fafc;
 }
 
 .modern-input:focus {
-  border-color: #3B82F6;
-  background: #FFFFFF;
+  border-color: #3b82f6;
+  background: #ffffff;
 }
 
 .modern-input.input-error {
-  border-color: #EF4444;
-  background: #FEF2F2;
+  border-color: #ef4444;
+  background: #fef2f2;
 }
 
 .error-text {
-  color: #EF4444;
+  color: #ef4444;
   font-size: 14px;
   margin-top: 8px;
 }
@@ -387,7 +402,7 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
   border-radius: 0 0 5px 5px;
   z-index: 1;
   height: 80px;
-  background-color: #F0F9FF;
+  background-color: #f0f9ff;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -426,7 +441,7 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
    10. UTILS & ANIMATIONS
    ========================================= */
 .validation-msg {
-  color: #EF4444;
+  color: #ef4444;
   font-size: 16px;
   display: flex;
   align-items: center;
@@ -435,19 +450,33 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
 }
 
 .icon-warn {
-  width: 20px; height: 20px;
+  width: 20px;
+  height: 20px;
 }
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.slide-enter-active, .slide-leave-active { transition: all 0.3s ease; }
-.slide-enter-from, .slide-leave-to { opacity: 0; transform: translateY(-10px); }
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.3s ease;
+}
+.slide-enter-from,
+.slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
 
 @media (max-width: 1160px) {
   .quiz-sheet {
@@ -455,7 +484,7 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
     height: 85vh; /* Чуть ниже, чтобы влезть */
     max-width: 1100px;
   }
-  
+
   .options-grid {
     grid-template-columns: repeat(2, 1fr); /* 2 колонки на планшетах */
   }
@@ -467,7 +496,7 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
     width: 100vw;
     border-radius: 0;
   }
-  
+
   .quiz-sheet__shadow-layer {
     display: none; /* Убираем тень на мобильных для производительности и места */
   }
@@ -475,7 +504,7 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
   .sheet-header {
     padding: 30px 20px 15px;
   }
-  
+
   .sheet-title {
     font-size: 24px;
   }

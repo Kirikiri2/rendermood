@@ -5,15 +5,13 @@ import StepRenderer from '@/components/quiz/StepRenderer.vue'
 
 const store = useQuizStore()
 
-onMounted(() => {
-  store.fetchSteps()
+onMounted(async () => {
+  await store.fetchSteps()
 })
 
 const step = computed(() => store.currentStepData)
 </script>
 
 <template>
-  <div v-if="step">
-    <StepRenderer :step="step" />
-  </div>
+  <StepRenderer v-if="step" :step="step" />
 </template>
