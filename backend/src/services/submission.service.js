@@ -1,5 +1,5 @@
 import { prisma } from "../utils/prisma.js";
-import { BitrixService } from "./bitrix.service.js";
+import { sendLeadToBitrix } from "./bitrix.service.js";
 
 export const SubmissionService = {
   create: async (data) => {
@@ -116,7 +116,7 @@ export const SubmissionService = {
 
     // 6. BITRIX (НЕ ЛОМАЕТ API)
     try {
-      await BitrixService.createLead({
+      await sendLeadToBitrix.createLead({
         name,
         phone,
         email,
