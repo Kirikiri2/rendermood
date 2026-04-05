@@ -105,7 +105,7 @@ export const SubmissionService = {
             questionId: Number(a.questionId),
             optionId: a.optionId ? Number(a.optionId) : null,
             value: a.value ?? null,
-            numberValue: a.numberValue ?? null
+            numberValue: a.value !== undefined ? Number(a.value) : null
           }))
         }
       },
