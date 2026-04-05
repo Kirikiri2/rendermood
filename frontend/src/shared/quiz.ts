@@ -46,3 +46,24 @@ export interface FormData {
   comment: string
   agree: boolean
 }
+
+export interface SubmissionResult {
+  success: boolean
+  data?: unknown
+  error?: string
+}
+
+export interface SubmissionAnswer {
+  questionId: number
+  optionId: number | null
+  value: string | null
+}
+
+export interface QuizSubmission {
+  name: string
+  phone: string
+  email: string
+  comment: string
+  consent: boolean
+  answers: SubmissionAnswer[]
+}

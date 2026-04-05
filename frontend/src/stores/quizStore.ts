@@ -1,5 +1,5 @@
 // stores/quizStore.ts
-import type { Answers, AnswerValue, FormData, Step, Option } from '@/shared/quiz'
+import type { Answers, AnswerValue, FormData, Step, Option, QuizSubmission, SubmissionResult } from '@/shared/quiz'
 import { defineStore } from 'pinia'
 
 export const useQuizStore = defineStore('quiz', {
@@ -50,13 +50,18 @@ export const useQuizStore = defineStore('quiz', {
         console.log('✅ Steps loaded:', this.steps)
       } catch (err) {
         console.error('❌ Ошибка загрузки шагов:', err)
+        throw err
       }
     },
 
     setAnswer(questionId: number, value: number | string) {
-      if (typeof value === 'number') this.answers[questionId] = { selected: value }
-      else this.answers[questionId] = { custom: value }
+      if (typeof value === 'number') {
+        this.answers[questionId] = { selected: value }
+      } else {
+        this.answers[questionId] = { custom: value }
+      }
 
+      // При смене типа помещения очищаем выбранные зоны
       if (questionId === 1) delete this.answers[2]
 
       this.save()
@@ -71,8 +76,11 @@ export const useQuizStore = defineStore('quiz', {
           ? [current.selected as number]
           : []
 
-      if (selected.includes(optionId)) selected = selected.filter((id) => id !== optionId)
-      else selected.push(optionId)
+      if (selected.includes(optionId)) {
+        selected = selected.filter((id) => id !== optionId)
+      } else {
+        selected.push(optionId)
+      }
 
       this.answers[questionId] = { selected }
       this.save()
@@ -92,13 +100,11 @@ export const useQuizStore = defineStore('quiz', {
 
     setAnswerWithCustom(questionId: number, optionId: number, customValue?: string) {
       const current: AnswerValue = this.answers[questionId] || {}
+      const payload: AnswerValue = { ...current, selected: optionId }
 
-      const payload: AnswerValue = {
-        ...current,
-        selected: optionId,
+      if (customValue?.trim()) {
+        payload.custom = customValue.trim()
       }
-
-      if (customValue?.trim()) payload.custom = customValue.trim()
 
       this.answers[questionId] = payload
       this.save()
@@ -106,12 +112,17 @@ export const useQuizStore = defineStore('quiz', {
 
     setCustomRangeAnswer(questionId: number, value: number) {
       const current = this.answers[questionId] || {}
-      this.answers[questionId] = { ...current, custom: String(value), value: value }
+      this.answers[questionId] = { ...current, custom: String(value), value }
       this.save()
     },
 
     setFormField<K extends keyof FormData>(key: K, value: FormData[K]) {
       this.form[key] = value
+      this.save()
+    },
+
+    setRadioAnswer(questionId: number, optionId: number) {
+      this.answers[questionId] = { selected: optionId }
       this.save()
     },
 
@@ -129,7 +140,9 @@ export const useQuizStore = defineStore('quiz', {
             o.text.toLowerCase().includes('другое') || o.text.toLowerCase().includes('other'),
         )
 
-        if (otherOpt && selected.includes(otherOpt.id)) return !!ans.custom?.trim()
+        if (otherOpt && selected.includes(otherOpt.id)) {
+          return !!ans.custom?.trim()
+        }
         return true
       }
 
@@ -140,73 +153,131 @@ export const useQuizStore = defineStore('quiz', {
             o.text.toLowerCase().includes('другое') || o.text.toLowerCase().includes('other'),
         )
 
-        if (otherOpt && ans.selected === otherOpt.id) return !!ans.custom?.trim()
+        if (otherOpt && ans.selected === otherOpt.id) {
+          return !!ans.custom?.trim()
+        }
         return ans.selected !== undefined
       }
 
-      if (type === 'range' || type === 'slider') return typeof ans.value === 'number'
+      if (type === 'range' || type === 'slider') {
+        return typeof ans.value === 'number'
+      }
 
       return true
     },
 
     nextStep() {
-      if (this.currentStep < this.steps.length - 1) this.currentStep++
+      if (this.currentStep < this.steps.length - 1) {
+        this.currentStep++
+      }
     },
 
     prevStep() {
-      if (this.currentStep > 0) this.currentStep--
+      if (this.currentStep > 0) {
+        this.currentStep--
+      }
     },
 
-    async submitQuiz() {
+    /**
+     * 🔥 Основной метод отправки — преобразует данные в формат API
+     */
+    async submitQuiz(): Promise<SubmissionResult> {
       try {
-        const cleanAnswers = Object.fromEntries(
-          Object.entries(this.answers).map(([key, value]) => {
-            const ans = value as AnswerValue
-            const cleaned: AnswerValue = { ...ans }
+        // 🔧 1. Преобразуем answers из объекта в массив
+        const answersArray = Object.entries(this.answers).map(([questionIdStr, answer]) => {
+          const questionId = Number(questionIdStr)
+          const ans = answer as AnswerValue
 
-            if (cleaned.custom) cleaned.custom = cleaned.custom.trim()
-            if (cleaned.custom === '') delete cleaned.custom
+          // Находим вопрос для получения текста опции
+          const question = this.steps.find((s) => s.question?.id === questionId)?.question
 
-            return [key, cleaned]
-          }),
-        )
+          let value: string | null = null
 
-        const payload = {
+          // 🎯 Определяем значение для отправки (приоритет: custom → selected text → value)
+          if (ans.custom?.trim()) {
+            value = ans.custom.trim()
+          } else if (typeof ans.selected === 'number') {
+            const option = question?.options?.find((o) => o.id === ans.selected)
+            value = option?.text || String(ans.selected)
+          } else if (Array.isArray(ans.selected) && ans.selected.length > 0) {
+            const texts = ans.selected
+              .map((id) => question?.options?.find((o) => o.id === id)?.text)
+              .filter((t): t is string => !!t)
+            value = texts.join(', ')
+          } else if (typeof ans.value === 'number') {
+            value = String(ans.value)
+          }
+
+          return {
+            questionId,
+            optionId: typeof ans.selected === 'number' ? ans.selected : null,
+            value: value || null,
+          }
+        })
+
+        // 🔧 2. Формируем финальный payload
+        const payload: QuizSubmission = {
           name: this.form.name.trim(),
           phone: this.form.phone.trim(),
           email: this.form.email?.trim() || '',
-          notes: this.form.comment?.trim() || '',
-          answers: cleanAnswers,
+          comment: this.form.comment?.trim() || '',
+          consent: this.form.agree,
+          answers: answersArray,
         }
 
+        // 🔐 Валидация обязательных полей
         if (!payload.name || !payload.phone) {
-          console.error('❌ Обязательные поля пустые')
-          return
+          throw new Error('Имя и телефон обязательны для заполнения')
         }
 
-        console.log('🚀 Отправка:', payload)
+        console.log('🚀 Отправка на бэкенд:', JSON.stringify(payload, null, 2))
 
+        // 📡 Запрос к API
         const res = await fetch('https://rendermood.onrender.com/api/submissions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
 
+        if (!res.ok) {
+          const errorText = await res.text().catch(() => 'Неизвестная ошибка')
+          throw new Error(`Ошибка сервера: ${res.status} — ${errorText}`)
+        }
+
         const data = await res.json()
-        console.log('✅ Успех:', data)
+        console.log('✅ Успешно отправлено:', data)
+
+        // 🧹 3. Автоматическая очистка localStorage после успешной отправки
+        this.clearStorage()
+
+        return { success: true, data }
       } catch (err) {
         console.error('❌ Ошибка отправки:', err)
+        const message = err instanceof Error ? err.message : 'Неизвестная ошибка'
+        return { success: false, error: message }
       }
     },
 
-    // 🔹 Добавленный метод для SubmissionStep.vue
-    submitForm() {
-      this.submitQuiz()
-    },
-    setRadioAnswer(questionId: number, optionId: number) {
-      this.answers[questionId] = { selected: optionId }
+    /**
+     * 🧹 Очистка localStorage и сброс состояния
+     */
+    clearStorage() {
+      localStorage.removeItem('quiz')
+      // Сбрасываем только answers и form, шаги оставляем (они статичные)
+      this.answers = {} as Answers
+      this.form = {
+        name: '',
+        phone: '',
+        email: '',
+        comment: '',
+        agree: false,
+      }
+      this.currentStep = 0
     },
 
+    /**
+     * 💾 Сохранение в localStorage
+     */
     save() {
       localStorage.setItem(
         'quiz',
@@ -215,6 +286,15 @@ export const useQuizStore = defineStore('quiz', {
           form: this.form,
         }),
       )
+    },
+
+    /**
+     * 🔁 Полный сброс стора (если нужно начать квиз заново)
+     */
+    $reset() {
+      this.clearStorage()
+      this.steps = []
+      this.currentStep = 0
     },
   },
 })
