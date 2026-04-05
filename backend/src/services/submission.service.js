@@ -92,7 +92,7 @@ export const SubmissionService = {
       }
     }
 
-    // 5. SAVE - ИСПРАВЛЕННЫЙ БЛОК
+    // 5. SAVE - ИСПРАВЛЕННАЯ ВЕРСИЯ
     // Фильтруем ответы с некорректным questionId
     const validAnswers = answers.filter(a => {
       const qId = Number(a.questionId);
@@ -114,15 +114,20 @@ export const SubmissionService = {
         consent: Boolean(consent),
 
         answers: {
-          create: validAnswers.map(a => ({
-            question: {
-              connect: { id: Number(a.questionId) }
-            },
-            optionId: a.optionId !== undefined && a.optionId !== null
-              ? Number(a.optionId)
-              : null,
-            value: a.value ?? null
-          }))
+          create: validAnswers.map(a => {
+            // Определяем тип значения (число или строка)
+            const value = a.value ?? null;
+            const numberValue = !isNaN(Number(value)) && value !== null ? Number(value) : null;
+            
+            return {
+              questionId: Number(a.questionId),
+              optionId: a.optionId !== undefined && a.optionId !== null
+                ? Number(a.optionId)
+                : null,
+              value: value,
+              numberValue: numberValue
+            };
+          })
         }
       },
       include: {

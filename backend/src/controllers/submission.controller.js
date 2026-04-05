@@ -1,27 +1,80 @@
-// 5. SAVE - ИСПРАВЛЕННАЯ ВЕРСИЯ (замени весь блок сохранения)
-const submission = await prisma.submission.create({
-  data: {
-    name: name.trim(),
-    phone: phone.trim(),
-    email: email.trim(),
-    comment: comment?.trim() || "",
-    consent: Boolean(consent),
+import { prisma } from "../utils/prisma.js";
 
-    answers: {
-      create: answers
-        .filter(a => a.questionId && !isNaN(Number(a.questionId))) // Отфильтровываем NaN
-        .map(a => ({
-          question: {                    // 👈 ВАЖНО: добавляем связь
-            connect: { id: Number(a.questionId) }
-          },
-          optionId: a.optionId !== undefined && a.optionId !== null
-            ? Number(a.optionId)
-            : null,
-          value: a.value ?? null
-        }))
+export const StepController = {
+  getAll: async (req, res) => {
+    try {
+      const steps = await prisma.step.findMany({
+        orderBy: {
+          order: 'asc'
+        },
+        include: {
+          question: {
+            include: {
+              options: {
+                orderBy: {
+                  id: 'asc'
+                }
+              },
+              sliderConfigs: {
+                include: {
+                  option: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      res.json({
+        success: true,
+        steps
+      });
+    } catch (error) {
+      console.error("GET STEPS ERROR:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
     }
   },
-  include: {
-    answers: true
+
+  getById: async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const step = await prisma.step.findUnique({
+        where: { id: Number(id) },
+        include: {
+          question: {
+            include: {
+              options: true,
+              sliderConfigs: {
+                include: {
+                  option: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (!step) {
+        return res.status(404).json({
+          success: false,
+          error: "Step not found"
+        });
+      }
+
+      res.json({
+        success: true,
+        step
+      });
+    } catch (error) {
+      console.error("GET STEP ERROR:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
   }
-});
+};
