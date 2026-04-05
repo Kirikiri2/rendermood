@@ -11,7 +11,7 @@ export const SubmissionController = {
       });
 
     } catch (error) {
-      console.error(error);
+      console.error("SUBMISSION ERROR:", error);
 
       return res.status(error.status || 500).json({
         success: false,

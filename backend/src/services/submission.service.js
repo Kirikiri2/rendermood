@@ -5,7 +5,7 @@ export const SubmissionService = {
   create: async (data) => {
     const { name, phone, email, comment, consent, answers } = data;
 
-    // 1. ВАЛИДАЦИЯ
+    // 1. VALIDATION
     if (!name || !phone || !email) {
       const err = new Error("Name, phone, email are required");
       err.status = 400;
@@ -24,7 +24,7 @@ export const SubmissionService = {
       throw err;
     }
 
-    // 2. ПРОВЕРКА ДУБЛЯ (по твоей модели Submission)
+    // 2. DUPLICATE CHECK
     const existing = await prisma.submission.findFirst({
       where: {
         OR: [{ email }, { phone }]
@@ -37,7 +37,7 @@ export const SubmissionService = {
       throw err;
     }
 
-    // 3. ПОЛУЧАЕМ ВОПРОСЫ И ОПЦИИ
+    // 3. GET QUESTIONS
     const questions = await prisma.question.findMany({
       include: { options: true }
     });
@@ -45,18 +45,19 @@ export const SubmissionService = {
     const questionMap = new Map();
     questions.forEach(q => questionMap.set(q.id, q));
 
-    // 4. ВАЛИДАЦИЯ ANSWERS (ВАЖНО ПОД ТВОЮ СХЕМУ)
+    // 4. VALIDATION (НОВАЯ ЛОГИКА ПОД JSON)
     for (const a of answers) {
       const question = questionMap.get(Number(a.questionId));
+      if (!question) continue;
 
-      if (!question) continue; // мягко игнорируем лишнее
+      const value = a.value;
 
-      // required
+      // required check
       if (question.isRequired) {
         const hasValue =
-          a.optionId !== undefined ||
-          a.value !== undefined ||
-          a.numberValue !== undefined;
+          value !== undefined &&
+          value !== null &&
+          value !== "";
 
         if (!hasValue) {
           const err = new Error(`Question ${question.id} is required`);
@@ -65,7 +66,7 @@ export const SubmissionService = {
         }
       }
 
-      // типы
+      // type validation (мягкая, без numberValue)
       if (question.type === "radio" || question.type === "carousel") {
         if (!a.optionId) {
           throw new Error(`Question ${question.id} requires optionId`);
@@ -79,19 +80,19 @@ export const SubmissionService = {
       }
 
       if (question.type === "input") {
-        if (!a.value) {
+        if (!value) {
           throw new Error(`Question ${question.id} requires text value`);
         }
       }
 
       if (question.type === "slider") {
-        if (a.numberValue === undefined) {
-          throw new Error(`Question ${question.id} requires numberValue`);
+        if (value === undefined || value === null || value === "") {
+          throw new Error(`Question ${question.id} requires value`);
         }
       }
     }
 
-    // 5. СОХРАНЕНИЕ (ПОЛНОСТЬЮ ПОД ТВОЮ БД)
+    // 5. SAVE
     const submission = await prisma.submission.create({
       data: {
         name: name.trim(),
@@ -103,9 +104,13 @@ export const SubmissionService = {
         answers: {
           create: answers.map(a => ({
             questionId: Number(a.questionId),
-            optionId: a.optionId ? Number(a.optionId) : null,
-            value: a.value ?? null,
-            numberValue: a.value !== undefined ? Number(a.value) : null
+
+            optionId:
+              a.optionId !== undefined && a.optionId !== null
+                ? Number(a.optionId)
+                : null,
+
+            value: a.value ?? null
           }))
         }
       },
@@ -114,7 +119,7 @@ export const SubmissionService = {
       }
     });
 
-    // 6. BITRIX (НЕ ЛОМАЕТ API)
+    // 6. BITRIX SAFE CALL
     try {
       await sendLeadToBitrix.createLead({
         name,
