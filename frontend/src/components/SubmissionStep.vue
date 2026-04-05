@@ -62,7 +62,9 @@ const handleCheckbox = (e: Event) => {
 
           <!-- Чекбокс согласия -->
           <label class="checkbox-agreement">
-            <input v-model="store.form.agree" type="checkbox" class="agreement-checkbox" />
+            <input type="checkbox" :checked="store.form.agree"
+              @change="(e) => store.setFormField('agree', (e.target as HTMLInputElement).checked)"
+              class="agreement-checkbox" />
             <span class="agreement-text">
               Я соглашаюсь на обработку персональных данных
             </span>
