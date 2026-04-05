@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { storeToRefs } from 'pinia'           // ← обязательно добавь
+import { storeToRefs } from 'pinia'
 import type { Component } from 'vue'
 import type { Question } from '@/shared/quiz'
 
@@ -11,7 +11,7 @@ import RangeQuestion from '@/components/questions/RangeQuestion.vue'
 import SubmissionStep from '@/components/SubmissionStep.vue'
 import { useQuizStore } from '@/stores/quizStore'
 import CarouselQuestion from '@/components/questions/CarouselQuestion.vue'
-import ProgressBar from '../ProgressBar.vue'
+
 
 const store = useQuizStore()
 
@@ -27,8 +27,7 @@ const componentMap: Record<string, Component> = {
   carousel: CarouselQuestion,
 }
 
-const getComponent = (question: Question): Component => 
-  componentMap[question.type] || InputQuestion
+const getComponent = (question: Question): Component => componentMap[question.type] || InputQuestion
 
 const isStepValid = computed(() => {
   const current = currentStepData.value
@@ -54,12 +53,8 @@ const isFormValid = computed(() => {
 </script>
 
 <template>
-  <div v-if="currentStepData" class="max-w-2xl mx-auto p-4">
-
-    
-    <h2 class="text-2xl font-bold mb-6">{{ currentStepData.title }}</h2>
-
-    <ProgressBar />
+  <div v-if="currentStepData" class="max-w-3xl mx-auto px-6 py-10">
+    <h2 class="text-3xl font-bold mb-10 text-center">{{ currentStepData.title }}</h2>
 
     <component
       v-if="currentStepData.type === 'question' && currentStepData.question"
@@ -70,11 +65,11 @@ const isFormValid = computed(() => {
 
     <SubmissionStep v-if="currentStepData.type === 'form'" />
 
-    <div class="flex gap-3 mt-8">
+    <div class="flex gap-4 mt-12">
       <button
         @click="store.prevStep"
         :disabled="store.currentStep === 0"
-        class="px-6 py-2 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+        class="px-8 py-3 rounded-xl border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
       >
         Назад
       </button>
@@ -83,7 +78,7 @@ const isFormValid = computed(() => {
         v-if="currentStepData.type !== 'form'"
         @click="store.nextStep"
         :disabled="!isStepValid"
-        class="px-6 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+        class="flex-1 px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
       >
         Вперед
       </button>
@@ -92,7 +87,7 @@ const isFormValid = computed(() => {
         v-if="currentStepData.type === 'form'"
         @click="store.submitQuiz"
         :disabled="!isFormValid"
-        class="px-6 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+        class="flex-1 px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
       >
         Отправить
       </button>

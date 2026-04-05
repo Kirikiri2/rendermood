@@ -3,6 +3,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useQuizStore } from '@/stores/quizStore'
 import type { Question } from '@/shared/quiz'
+import ProgressBar from '../ProgressBar.vue';
 
 const props = defineProps<{ question: Question }>()
 const store = useQuizStore()
@@ -113,7 +114,7 @@ const handleBlur = () => {
       
       <!-- ВЕРХНЯЯ ЧАСТЬ -->
       <header class="sheet-header">
-        <div class="progress-bar"></div>
+        <ProgressBar />
         <h2 class="sheet-title">{{ question.text }}</h2>
       </header>
 

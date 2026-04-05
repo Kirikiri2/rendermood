@@ -2,6 +2,7 @@
 import type { Question } from '@/shared/quiz'
 import { useQuizStore } from '@/stores/quizStore'
 import { computed } from 'vue';
+import ProgressBar from '../ProgressBar.vue';
 
 const props = defineProps<{
   question: Question
@@ -31,7 +32,7 @@ const isEmpty = computed(() => {
 
       <!-- ВЕРХНЯЯ ЧАСТЬ -->
       <header class="sheet-header">
-        <div class="progress-bar"></div>
+        <ProgressBar />
         <h2 class="sheet-title">{{ question.text }}</h2>
       </header>
 

@@ -3,6 +3,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Question } from '@/shared/quiz'
 import { useQuizStore } from '@/stores/quizStore'
+import ProgressBar from '../ProgressBar.vue';
 
 const props = defineProps<{ question: Question }>()
 const store = useQuizStore()
@@ -143,7 +144,7 @@ const handleImageError = (e: Event) => {
 
       <!-- ВЕРХНЯЯ ЧАСТЬ -->
       <header class="sheet-header">
-        <div class="progress-bar"></div>
+        <ProgressBar />
         <h2 class="sheet-title">{{ question.text }}</h2>
       </header>
 

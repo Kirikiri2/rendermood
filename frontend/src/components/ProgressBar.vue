@@ -4,22 +4,27 @@ import { storeToRefs } from 'pinia'
 import { useQuizStore } from '@/stores/quizStore'
 
 const store = useQuizStore()
-const { currentStepData, steps } = storeToRefs(store)
+const { steps } = storeToRefs(store)
 
-const questionSteps = computed(() => 
-  steps.value.filter(s => s.type === 'question')
+// только шаги с вопросами
+const questionSteps = computed(() =>
+  steps.value.filter((s) => s.type === 'question')
 )
 
 const total = computed(() => questionSteps.value.length)
 
+// индекс текущего вопроса
 const currentIndex = computed(() => {
-  const step = currentStepData.value
-  if (!step || step.type !== 'question') return -1
+  const current = store.currentStep
 
-  const idx = questionSteps.value.findIndex(s => s.id === step.id)
-  return idx >= 0 ? idx : -1
+  if (current < 0) return -1
+
+  const stepsBefore = steps.value.slice(0, current + 1)
+
+  return stepsBefore.filter((s) => s.type === 'question').length - 1
 })
 
+// процент
 const percent = computed(() => {
   if (total.value === 0 || currentIndex.value < 0) return 0
   return Math.min(100, Math.round(((currentIndex.value + 1) / total.value) * 100))
@@ -27,18 +32,27 @@ const percent = computed(() => {
 </script>
 
 <template>
-  <div v-if="currentIndex >= 0" class="my-6">
-    <!-- Дебаг (можно потом удалить) -->
-    <div class="text-[10px] text-gray-400 mb-2">
-      Шаг {{ currentIndex + 1 }} из {{ total }} • {{ percent }}%
-    </div>
-
-    <!-- Сама полоса прогресса -->
-    <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
-      <div 
-        class="h-full bg-linear-to-r from-blue-600 to-cyan-500 transition-all duration-500 ease-out"
-        :style="{ width: percent + '%' }"
-      ></div>
-    </div>
+  <div v-if="currentIndex >= 0" class="progress-wrapper">
+    <div
+      class="progress-fill"
+      :style="{ width: percent + '%' }"
+    ></div>
   </div>
 </template>
+
+<style scoped>
+.progress-wrapper {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(to right, #3b82f6, #06b6d4);
+  transition: width 0.4s ease;
+  border-radius: 3px;
+}
+</style>

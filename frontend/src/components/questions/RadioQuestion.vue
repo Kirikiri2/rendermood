@@ -3,6 +3,7 @@
 import { computed, ref, watch } from 'vue'
 import type { Question, Option } from '@/shared/quiz'
 import { useQuizStore } from '@/stores/quizStore'
+import ProgressBar from '../ProgressBar.vue';
 
 const props = defineProps<{ question: Question }>()
 const store = useQuizStore()
@@ -59,7 +60,7 @@ defineEmits<{ (e: 'complete'): void }>()
 
       <!-- ВЕРХНЯЯ ЧАСТЬ -->
       <header class="sheet-header">
-        <div class="progress-bar"></div>
+        <ProgressBar />
         <h2 class="sheet-title">{{ question.text }}</h2>
       </header>
 

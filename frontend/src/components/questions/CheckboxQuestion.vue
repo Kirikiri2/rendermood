@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import type { Question, Option } from '@/shared/quiz'
 import { useQuizStore } from '@/stores/quizStore'
+import ProgressBar from '../ProgressBar.vue';
 
 const props = defineProps<{ question: Question }>()
 const store = useQuizStore()
@@ -76,7 +77,7 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
       <div class="quiz-sheet__shadow-layer"></div>
 
       <header class="sheet-header">
-        <div class="progress-bar"></div>
+        <ProgressBar />
         <h2 class="sheet-title">{{ question.text }}</h2>
       </header>
 
@@ -295,8 +296,14 @@ const isEmpty = computed(() => selectedIds.value.length === 0)
   animation: fadeIn 0.3s ease-out;
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .slide-enter-active,
