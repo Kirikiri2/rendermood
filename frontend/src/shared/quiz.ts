@@ -57,6 +57,7 @@ export interface SubmissionAnswer {
   questionId: number
   optionId: number | null
   value: string | null
+  numberValue: number | null
 }
 
 export interface QuizSubmission {

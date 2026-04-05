@@ -226,7 +226,9 @@ const answersArray = Object.entries(this.answers).map(([questionIdStr, answer]) 
     numberValue, // ✅ теперь правильно
   }
 })
-
+if (!this.form.agree) {
+  throw new Error('Необходимо согласие на обработку данных')
+}
     const payload: QuizSubmission = {
       name: this.form.name.trim(),
       phone: this.form.phone.trim(),
