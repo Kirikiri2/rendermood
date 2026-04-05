@@ -45,7 +45,7 @@ export const SubmissionService = {
     const questionMap = new Map();
     questions.forEach(q => questionMap.set(q.id, q));
 
-    // 4. VALIDATION (НОВАЯ ЛОГИКА ПОД JSON)
+    // 4. VALIDATION
     for (const a of answers) {
       const question = questionMap.get(Number(a.questionId));
       if (!question) continue;
@@ -66,7 +66,7 @@ export const SubmissionService = {
         }
       }
 
-      // type validation (мягкая, без numberValue)
+      // type validation
       if (question.type === "radio" || question.type === "carousel") {
         if (!a.optionId) {
           throw new Error(`Question ${question.id} requires optionId`);
@@ -92,7 +92,19 @@ export const SubmissionService = {
       }
     }
 
-    // 5. SAVE
+    // 5. SAVE - ИСПРАВЛЕННЫЙ БЛОК
+    // Фильтруем ответы с некорректным questionId
+    const validAnswers = answers.filter(a => {
+      const qId = Number(a.questionId);
+      return !isNaN(qId) && qId > 0;
+    });
+
+    if (validAnswers.length === 0) {
+      const err = new Error("No valid answers provided");
+      err.status = 400;
+      throw err;
+    }
+
     const submission = await prisma.submission.create({
       data: {
         name: name.trim(),
@@ -102,14 +114,13 @@ export const SubmissionService = {
         consent: Boolean(consent),
 
         answers: {
-          create: answers.map(a => ({
-            questionId: Number(a.questionId),
-
-            optionId:
-              a.optionId !== undefined && a.optionId !== null
-                ? Number(a.optionId)
-                : null,
-
+          create: validAnswers.map(a => ({
+            question: {
+              connect: { id: Number(a.questionId) }
+            },
+            optionId: a.optionId !== undefined && a.optionId !== null
+              ? Number(a.optionId)
+              : null,
             value: a.value ?? null
           }))
         }
@@ -126,7 +137,7 @@ export const SubmissionService = {
         phone,
         email,
         comment,
-        answers
+        answers: validAnswers
       });
     } catch (e) {
       console.error("⚠️ Bitrix error:", e.message);

@@ -183,69 +183,86 @@ export const useQuizStore = defineStore('quiz', {
      */
 async submitQuiz(): Promise<SubmissionResult> {
   try {
-const answersArray = Object.entries(this.answers).map(([questionIdStr, answer]) => {
-  const questionId = Number(questionIdStr)
-  const ans = answer as AnswerValue
-
-  const question = this.steps.find((s) => s.question?.id === questionId)?.question
-
-  let value: string | null = null
-  let optionId: number | null = null
-
-  // RADIO
-  if (typeof ans.selected === 'number') {
-    optionId = ans.selected
-    const option = question?.options?.find((o) => o.id === ans.selected)
-    value = option?.text ?? null
-  }
-
-  // CHECKBOX
-else if (Array.isArray(ans.selected)) {
-  return ans.selected.map((optionId) => {
-    const option = question?.options?.find((o) => o.id === optionId)
-
-    return {
-      questionId,
-      optionId,
-      value: option?.text ?? null,
+    const answersArray = Object.entries(this.answers)
+      .map(([questionIdStr, answer]) => {
+        const questionId = Number(questionIdStr);
+        
+        // Пропускаем некорректные questionId
+        if (isNaN(questionId) || questionId <= 0) return null;
+        
+        const ans = answer as AnswerValue;
+        const question = this.steps.find((s) => s.question?.id === questionId)?.question;
+        
+        let value: string | null = null;
+        let optionId: number | null = null;
+        
+        // RADIO
+        if (typeof ans.selected === 'number') {
+          optionId = ans.selected;
+          const option = question?.options?.find((o) => o.id === ans.selected);
+          value = option?.text ?? null;
+        }
+        
+        // CHECKBOX
+        else if (Array.isArray(ans.selected)) {
+          return ans.selected.map((optId) => {
+            const option = question?.options?.find((o) => o.id === optId);
+            return {
+              questionId,
+              optionId: optId,
+              value: option?.text ?? null,
+            };
+          });
+        }
+        
+        // CUSTOM INPUT
+        if (ans.custom?.trim()) {
+          value = ans.custom.trim();
+        }
+        
+        // RANGE / SLIDER
+        if (typeof ans.value === 'number') {
+          value = String(ans.value);
+        }
+        
+        // Если нет ни optionId, ни value - пропускаем
+        if (optionId === null && (value === null || value === '')) {
+          return null;
+        }
+        
+        return {
+          questionId,
+          optionId,
+          value,
+        };
+      })
+      .filter(Boolean)  // Убираем null
+      .flat();          // Разворачиваем массивы из checkbox
+    
+    if (!this.form.consent) {
+      throw new Error('Необходимо согласие на обработку данных');
     }
-  })
-}
-
-  // CUSTOM INPUT
-  if (ans.custom?.trim()) {
-    value = ans.custom.trim()
-  }
-
-  // RANGE / SLIDER
-  if (typeof ans.value === 'number') {
-    value = String(ans.value) // 🔥 ВАЖНО: всегда string
-  }
-
-  return {
-    questionId,
-    optionId,
-    value,
-  }
-})
-if (!this.form.consent) {
-  throw new Error('Необходимо согласие на обработку данных')
-}
+    
     const payload = {
-  name: this.form.name.trim(),
-  phone: this.form.phone.trim(),
-  email: this.form.email?.trim() || '',
-  consent: this.form.consent === true,
-  answers: answersArray,
-}
-
-    // 🔐 validation
+      name: this.form.name.trim(),
+      phone: this.form.phone.trim(),
+      email: this.form.email?.trim() || '',
+      comment: this.form.comment?.trim() || '',
+      consent: this.form.consent === true,
+      answers: answersArray,
+    };
+    
+    // Валидация
     if (!payload.name || !payload.phone) {
-      throw new Error('Имя и телефон обязательны')
+      throw new Error('Имя и телефон обязательны');
     }
-
-    console.log('🚀 SENDING PAYLOAD:', payload)
-
+    
+    if (answersArray.length === 0) {
+      throw new Error('Нет ответов для отправки');
+    }
+    
+    console.log('🚀 SENDING PAYLOAD:', payload);
+    
     const res = await fetch('https://rendermood.onrender.com/api/submissions', {
       method: 'POST',
       headers: {
@@ -253,43 +270,34 @@ if (!this.form.consent) {
         Accept: 'application/json',
       },
       body: JSON.stringify(payload),
-    })
-
-    // 🔥 важно: читаем ответ всегда
-    const raw = await res.text()
-
-    let data
+    });
+    
+    const raw = await res.text();
+    let data;
     try {
-      data = JSON.parse(raw)
+      data = JSON.parse(raw);
     } catch {
-      data = raw
+      data = raw;
     }
-
+    
     if (!res.ok) {
-      console.error('❌ BACKEND ERROR:', data)
-
-      throw new Error(
-        typeof data === 'string'
-          ? data
-          : data?.message || `HTTP ${res.status}`
-      )
+      console.error('❌ BACKEND ERROR:', data);
+      throw new Error(typeof data === 'string' ? data : data?.message || `HTTP ${res.status}`);
     }
-
-    console.log('✅ SUCCESS:', data)
-
-    this.clearStorage()
-
+    
+    console.log('✅ SUCCESS:', data);
+    this.clearStorage();
+    
     return {
       success: true,
       data,
-    }
+    };
   } catch (err) {
-    console.error('❌ submitQuiz failed:', err)
-
+    console.error('❌ submitQuiz failed:', err);
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Unknown error',
-    }
+    };
   }
 },
 
