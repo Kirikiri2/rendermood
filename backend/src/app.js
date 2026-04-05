@@ -19,11 +19,11 @@ app.use(cors({
   ]
 }));
 
-app.use((req, res, next) => {
-  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-  next();
-});
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: {
+    policy: "cross-origin",
+  },
+}));
 app.use(express.json());
 
 const uploadsDir = path.resolve("uploads");
