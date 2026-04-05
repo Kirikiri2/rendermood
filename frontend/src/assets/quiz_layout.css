@@ -157,8 +157,8 @@
   .sheet-header { padding: 20px 15px 12px; }
   .sheet-title { font-size: 20px; }
   /* .progress-bar { left: 15px; width: 120px !important; } */
-  .sheet-body { padding: 15px; flex:none; }
-  .sheet-footer { padding: 0 15px; }
+  .sheet-body { padding: 15px; }
+  .sheet-footer { padding: 0 15px; margin:-20px; }
   .nav-btn { font-size: 16px; padding: 6px 12px; }
 }
 
