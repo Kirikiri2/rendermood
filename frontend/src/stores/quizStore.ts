@@ -183,34 +183,49 @@ export const useQuizStore = defineStore('quiz', {
      */
 async submitQuiz(): Promise<SubmissionResult> {
   try {
-    const answersArray = Object.entries(this.answers).map(([questionIdStr, answer]) => {
-      const questionId = Number(questionIdStr)
-      const ans = answer as AnswerValue
+const answersArray = Object.entries(this.answers).map(([questionIdStr, answer]) => {
+  const questionId = Number(questionIdStr)
+  const ans = answer as AnswerValue
 
-      const question = this.steps.find((s) => s.question?.id === questionId)?.question
+  const question = this.steps.find((s) => s.question?.id === questionId)?.question
 
-      let value: string | null = null
+  let value: string | null = null
+  let numberValue: number | null = null
+  let optionId: number | null = null
 
-      if (ans.custom?.trim()) {
-        value = ans.custom.trim()
-      } else if (typeof ans.selected === 'number') {
-        const option = question?.options?.find((o) => o.id === ans.selected)
-        value = option?.text ?? String(ans.selected)
-      } else if (Array.isArray(ans.selected)) {
-        value = ans.selected
-          .map((id) => question?.options?.find((o) => o.id === id)?.text)
-          .filter(Boolean)
-          .join(', ')
-      } else if (typeof ans.value === 'number') {
-        value = String(ans.value)
-      }
+  // 🔥 1. RADIO / CAROUSEL
+  if (typeof ans.selected === 'number') {
+    optionId = ans.selected
 
-      return {
-        questionId,
-        optionId: typeof ans.selected === 'number' ? ans.selected : null,
-        value,
-      }
-    })
+    const option = question?.options?.find((o) => o.id === ans.selected)
+    value = option?.text ?? null
+  }
+
+  // 🔥 2. CHECKBOX
+  else if (Array.isArray(ans.selected)) {
+    value = ans.selected
+      .map((id) => question?.options?.find((o) => o.id === id)?.text)
+      .filter(Boolean)
+      .join(', ')
+  }
+
+  // 🔥 3. INPUT / CUSTOM
+  if (ans.custom?.trim()) {
+    value = ans.custom.trim()
+  }
+
+  // 🔥 4. SLIDER (ВАЖНО)
+  if (typeof ans.value === 'number') {
+    numberValue = ans.value
+  }
+
+  return {
+    questionId,
+    optionId,
+    value,
+    numberValue, // ✅ теперь правильно
+  }
+})
 
     const payload: QuizSubmission = {
       name: this.form.name.trim(),
