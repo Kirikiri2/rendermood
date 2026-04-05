@@ -10,10 +10,9 @@ const handleInput = (e: Event, key: 'name' | 'phone' | 'email' | 'comment') => {
   store.setFormField(key, target.value as string)
 }
 
-// 🔒 Безопасная обработка чекбокса
 const handleCheckbox = (e: Event) => {
   const target = e.target as HTMLInputElement
-  store.setFormField('agree', target.checked)
+  store.setFormField('consent', target.checked)
 }
 </script>
 
@@ -62,16 +61,14 @@ const handleCheckbox = (e: Event) => {
 
           <!-- Чекбокс согласия -->
           <label class="checkbox-agreement">
-            <input type="checkbox" :checked="store.form.agree"
-              @change="(e) => store.setFormField('agree', (e.target as HTMLInputElement).checked)"
-              class="agreement-checkbox" />
+            <input type="checkbox" :checked="store.form.consent" @change="handleCheckbox" />
             <span class="agreement-text">
               Я соглашаюсь на обработку персональных данных
             </span>
           </label>
 
           <!-- Кнопка отправки -->
-          <button type="button" class="submit-btn" @click="store.submitForm">
+          <button type="button" class="submit-btn" @click="store.submitQuiz">
             Получить консультацию
           </button>
         </div>

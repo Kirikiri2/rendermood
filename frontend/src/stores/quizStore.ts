@@ -190,18 +190,16 @@ const answersArray = Object.entries(this.answers).map(([questionIdStr, answer]) 
   const question = this.steps.find((s) => s.question?.id === questionId)?.question
 
   let value: string | null = null
-  let numberValue: number | null = null
   let optionId: number | null = null
 
-  // 🔥 1. RADIO / CAROUSEL
+  // RADIO
   if (typeof ans.selected === 'number') {
     optionId = ans.selected
-
     const option = question?.options?.find((o) => o.id === ans.selected)
     value = option?.text ?? null
   }
 
-  // 🔥 2. CHECKBOX
+  // CHECKBOX
   else if (Array.isArray(ans.selected)) {
     value = ans.selected
       .map((id) => question?.options?.find((o) => o.id === id)?.text)
@@ -209,34 +207,32 @@ const answersArray = Object.entries(this.answers).map(([questionIdStr, answer]) 
       .join(', ')
   }
 
-  // 🔥 3. INPUT / CUSTOM
+  // CUSTOM INPUT
   if (ans.custom?.trim()) {
     value = ans.custom.trim()
   }
 
-  // 🔥 4. SLIDER (ВАЖНО)
+  // RANGE / SLIDER
   if (typeof ans.value === 'number') {
-    numberValue = ans.value
+    value = String(ans.value) // 🔥 ВАЖНО: всегда string
   }
 
   return {
     questionId,
     optionId,
     value,
-    numberValue, // ✅ теперь правильно
   }
 })
 if (!this.form.consent) {
   throw new Error('Необходимо согласие на обработку данных')
 }
-    const payload: QuizSubmission = {
-      name: this.form.name.trim(),
-      phone: this.form.phone.trim(),
-      email: this.form.email?.trim() || '',
-      comment: this.form.comment?.trim() || '',
-      consent: Boolean(this.form.consent),
-      answers: answersArray,
-    }
+    const payload = {
+  name: this.form.name.trim(),
+  phone: this.form.phone.trim(),
+  email: this.form.email?.trim() || '',
+  consent: this.form.consent === true,
+  answers: answersArray,
+}
 
     // 🔐 validation
     if (!payload.name || !payload.phone) {
