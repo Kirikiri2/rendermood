@@ -13,7 +13,7 @@ import optionRoutes from "./routes/option.routes.js";
 
 const app = express();
 
-app.use(cors({ origin: "*" }));
+app.use(cors({ origin: "https://rendermood.vercel.app" }));
 app.use(helmet());
 app.use(express.json());
 
