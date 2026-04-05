@@ -137,7 +137,7 @@ export const SubmissionService = {
 
     // 6. BITRIX SAFE CALL
     try {
-      await sendLeadToBitrix.createLead({
+      await sendLeadToBitrix({
         name,
         phone,
         email,
