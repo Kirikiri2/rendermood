@@ -149,16 +149,12 @@ model Answer {
   submissionId Int
   questionId   Int
 
-  optionId    Int?
-  value       String?
-  numberValue Int?
+  value Json
 
   submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   question   Question   @relation(fields: [questionId], references: [id])
-  option     Option?    @relation(fields: [optionId], references: [id])
 
   createdAt DateTime @default(now())
-
-  @@index([submissionId])
-  @@index([questionId])
+  option    Option?  @relation(fields: [optionId], references: [id])
+  optionId  Int?
 }
