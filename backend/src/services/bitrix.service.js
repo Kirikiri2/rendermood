@@ -34,11 +34,8 @@ export const sendLeadToBitrix = async ({ name, phone, email, comment, answers })
 
     const createdAt = new Date().toLocaleString("ru-RU");
 
-    // 🧠 отдельное поле ANSWERS (чистый список)
-    const answersText = formattedAnswers.join("\n");
-
-    // 🧠 COMMENTS теперь только про клиента + мета
-    const comments = `
+    // Формируем полный комментарий со всеми данными
+    const fullComment = `
 📅 Дата заявки: ${createdAt}
 
 👤 Клиент:
@@ -46,27 +43,42 @@ export const sendLeadToBitrix = async ({ name, phone, email, comment, answers })
 Телефон: ${phone}
 Email: ${email || "-"}
 Комментарий: ${comment || "-"}
+
+📝 Ответы на вопросы:
+${formattedAnswers.join("\n")}
     `;
+
+    // Подготавливаем данные для Bitrix
+    const leadData = {
+      FIELDS: {
+        TITLE: `Квиз: заявка от ${name}`,
+        NAME: name,
+        PHONE: [{ VALUE: phone, VALUE_TYPE: "WORK" }],
+        EMAIL: email ? [{ VALUE: email, VALUE_TYPE: "WORK" }] : [],
+        COMMENTS: fullComment, // Все данные в комментарий
+        SOURCE_ID: "WEB", // Источник - сайт
+        SOURCE_DESCRIPTION: "Квиз на сайте rendermood.vercel.app"
+      },
+      params: { REGISTER_SONET_EVENT: "Y" } // Отправить уведомление
+    };
+
+    console.log("🚀 Sending to Bitrix:", JSON.stringify(leadData, null, 2));
 
     const response = await axios.post(
       `${BITRIX_WEBHOOK}crm.lead.add.json`,
-      {
-        FIELDS: {
-          TITLE: "Квиз: заявка на дизайн",
-          NAME: name,
-          PHONE: [{ VALUE: phone, VALUE_TYPE: "WORK" }],
-          EMAIL: email ? [{ VALUE: email, VALUE_TYPE: "WORK" }] : [],
-
-          // 🔥 НОВОЕ
-          COMMENTS: comments,
-          ANSWERS: answersText
-        }
-      }
+      leadData
     );
+
+    console.log("✅ Bitrix response:", response.data);
+
+    if (response.data.error) {
+      console.error("❌ Bitrix error:", response.data.error_description);
+      return null;
+    }
 
     return response.data;
   } catch (error) {
-    console.error("Bitrix error:", error.response?.data || error.message);
+    console.error("❌ Bitrix error:", error.response?.data || error.message);
     return null;
   }
 };
