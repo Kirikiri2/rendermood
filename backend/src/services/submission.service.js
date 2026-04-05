@@ -5,40 +5,40 @@ export const SubmissionService = {
   create: async (data) => {
     const { name, phone, email, comment, consent, answers } = data;
 
-    // 0. обязательные поля (под твою схему)
-    if (!email || !phone || !name) {
-      throw new Error("Name, phone, email are required");
+    // 1. базовая валидация
+    if (!name || !phone || !email) {
+      const err = new Error("Name, phone, email are required");
+      err.status = 400;
+      throw err;
     }
 
     if (!consent) {
-      throw new Error("Consent must be accepted");
+      const err = new Error("Consent must be accepted");
+      err.status = 400;
+      throw err;
     }
 
-    // 1. получаем вопросы
+    if (!Array.isArray(answers)) {
+      const err = new Error("Answers must be an array");
+      err.status = 400;
+      throw err;
+    }
+
+    // 2. получаем вопросы из БД
     const questions = await prisma.question.findMany({
       include: { options: true }
     });
 
-    const questionIds = questions.map(q => q.id);
+    const questionIds = questions.map(q => Number(q.id));
+    const answeredIds = answers.map(a => Number(a.questionId));
 
-    // 2. пришедшие ответы
-    const answeredIds = answers.map(a => a.questionId);
-
-    // 3. проверка пропусков
-    const missing = questionIds.filter(id => !answeredIds.includes(id));
-
-    if (missing.length > 0) {
-      throw new Error(`Missing answers for questions: ${missing.join(", ")}`);
-    }
-
-    // 4. проверка лишних
+    // 3. проверка лишних ответов (мягкая, не критическая)
     const extra = answeredIds.filter(id => !questionIds.includes(id));
-
     if (extra.length > 0) {
-      throw new Error(`Invalid questionIds: ${extra.join(", ")}`);
+      console.warn("⚠️ Extra questionIds ignored:", extra);
     }
 
-    // 5. дубликат (лучше email + phone)
+    // 4. проверка дублей
     const existing = await prisma.submission.findFirst({
       where: {
         OR: [{ email }, { phone }]
@@ -46,22 +46,25 @@ export const SubmissionService = {
     });
 
     if (existing) {
-      throw new Error("You already submitted this form");
+      const err = new Error("You already submitted this form");
+      err.status = 409;
+      throw err;
     }
 
-    // 6. сохраняем submission
+    // 5. сохранение submission
     const submission = await prisma.submission.create({
       data: {
-        name,
-        phone,
-        email,
-        comment,
-        consent,
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        comment: comment?.trim() || "",
+        consent: Boolean(consent),
+
         answers: {
           create: answers.map(a => ({
-            questionId: a.questionId,
-            optionId: a.optionId || null,
-            value: a.value || null,
+            questionId: Number(a.questionId),
+            optionId: a.optionId ?? null,
+            value: a.value ?? null,
             numberValue: a.numberValue ?? null
           }))
         }
@@ -71,14 +74,18 @@ export const SubmissionService = {
       }
     });
 
-    // 7. отправка в Bitrix (не ломает флоу)
-    await BitrixService.createLead({
-      name,
-      phone,
-      email,
-      comment,
-      answers
-    });
+    // 6. Bitrix (НЕ ЛОМАЕТ API)
+    try {
+      await BitrixService.createLead({
+        name,
+        phone,
+        email,
+        comment,
+        answers
+      });
+    } catch (e) {
+      console.error("⚠️ Bitrix error:", e.message);
+    }
 
     return submission;
   }

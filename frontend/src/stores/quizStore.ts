@@ -181,82 +181,99 @@ export const useQuizStore = defineStore('quiz', {
     /**
      * 🔥 Основной метод отправки — преобразует данные в формат API
      */
-    async submitQuiz(): Promise<SubmissionResult> {
-      try {
-        // 🔧 1. Преобразуем answers из объекта в массив
-        const answersArray = Object.entries(this.answers).map(([questionIdStr, answer]) => {
-          const questionId = Number(questionIdStr)
-          const ans = answer as AnswerValue
+async submitQuiz(): Promise<SubmissionResult> {
+  try {
+    const answersArray = Object.entries(this.answers).map(([questionIdStr, answer]) => {
+      const questionId = Number(questionIdStr)
+      const ans = answer as AnswerValue
 
-          // Находим вопрос для получения текста опции
-          const question = this.steps.find((s) => s.question?.id === questionId)?.question
+      const question = this.steps.find((s) => s.question?.id === questionId)?.question
 
-          let value: string | null = null
+      let value: string | null = null
 
-          // 🎯 Определяем значение для отправки (приоритет: custom → selected text → value)
-          if (ans.custom?.trim()) {
-            value = ans.custom.trim()
-          } else if (typeof ans.selected === 'number') {
-            const option = question?.options?.find((o) => o.id === ans.selected)
-            value = option?.text || String(ans.selected)
-          } else if (Array.isArray(ans.selected) && ans.selected.length > 0) {
-            const texts = ans.selected
-              .map((id) => question?.options?.find((o) => o.id === id)?.text)
-              .filter((t): t is string => !!t)
-            value = texts.join(', ')
-          } else if (typeof ans.value === 'number') {
-            value = String(ans.value)
-          }
-
-          return {
-            questionId,
-            optionId: typeof ans.selected === 'number' ? ans.selected : null,
-            value: value || null,
-          }
-        })
-
-        // 🔧 2. Формируем финальный payload
-        const payload: QuizSubmission = {
-          name: this.form.name.trim(),
-          phone: this.form.phone.trim(),
-          email: this.form.email?.trim() || '',
-          comment: this.form.comment?.trim() || '',
-          consent: this.form.agree,
-          answers: answersArray,
-        }
-
-        // 🔐 Валидация обязательных полей
-        if (!payload.name || !payload.phone) {
-          throw new Error('Имя и телефон обязательны для заполнения')
-        }
-
-        console.log('🚀 Отправка на бэкенд:', JSON.stringify(payload, null, 2))
-
-        // 📡 Запрос к API
-        const res = await fetch('https://rendermood.onrender.com/api/submissions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-
-        if (!res.ok) {
-          const errorText = await res.text().catch(() => 'Неизвестная ошибка')
-          throw new Error(`Ошибка сервера: ${res.status} — ${errorText}`)
-        }
-
-        const data = await res.json()
-        console.log('✅ Успешно отправлено:', data)
-
-        // 🧹 3. Автоматическая очистка localStorage после успешной отправки
-        this.clearStorage()
-
-        return { success: true, data }
-      } catch (err) {
-        console.error('❌ Ошибка отправки:', err)
-        const message = err instanceof Error ? err.message : 'Неизвестная ошибка'
-        return { success: false, error: message }
+      if (ans.custom?.trim()) {
+        value = ans.custom.trim()
+      } else if (typeof ans.selected === 'number') {
+        const option = question?.options?.find((o) => o.id === ans.selected)
+        value = option?.text ?? String(ans.selected)
+      } else if (Array.isArray(ans.selected)) {
+        value = ans.selected
+          .map((id) => question?.options?.find((o) => o.id === id)?.text)
+          .filter(Boolean)
+          .join(', ')
+      } else if (typeof ans.value === 'number') {
+        value = String(ans.value)
       }
-    },
+
+      return {
+        questionId,
+        optionId: typeof ans.selected === 'number' ? ans.selected : null,
+        value,
+      }
+    })
+
+    const payload: QuizSubmission = {
+      name: this.form.name.trim(),
+      phone: this.form.phone.trim(),
+      email: this.form.email?.trim() || '',
+      comment: this.form.comment?.trim() || '',
+      consent: Boolean(this.form.agree),
+      answers: answersArray,
+    }
+
+    // 🔐 validation
+    if (!payload.name || !payload.phone) {
+      throw new Error('Имя и телефон обязательны')
+    }
+
+    console.log('🚀 SENDING PAYLOAD:', payload)
+
+    const res = await fetch('https://rendermood.onrender.com/api/submissions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    // 🔥 важно: читаем ответ всегда
+    const raw = await res.text()
+
+    let data
+    try {
+      data = JSON.parse(raw)
+    } catch {
+      data = raw
+    }
+
+    if (!res.ok) {
+      console.error('❌ BACKEND ERROR:', data)
+
+      throw new Error(
+        typeof data === 'string'
+          ? data
+          : data?.message || `HTTP ${res.status}`
+      )
+    }
+
+    console.log('✅ SUCCESS:', data)
+
+    this.clearStorage()
+
+    return {
+      success: true,
+      data,
+    }
+  } catch (err) {
+    console.error('❌ submitQuiz failed:', err)
+
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Unknown error',
+    }
+  }
+},
 
     /**
      * 🧹 Очистка localStorage и сброс состояния

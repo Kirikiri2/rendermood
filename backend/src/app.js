@@ -13,44 +13,97 @@ import optionRoutes from "./routes/option.routes.js";
 
 const app = express();
 
-// Разрешаем CORS только для твоего фронтенда
+/**
+ * 🔥 CORS (ВАЖНО: preflight + credentials-safe setup)
+ */
 app.use(cors({
-  origin: ["https://rendermood.vercel.app", "http://localhost:5173"]
+  origin: [
+    "https://rendermood.vercel.app",
+    "http://localhost:5173"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// Helmet без Cross-Origin-Resource-Policy
-app.use(helmet({
-  crossOriginResourcePolicy: false
-}));
+// 🔥 обязательно для preflight
+app.options("*", cors());
 
+/**
+ * 🔐 Helmet (без конфликтов с CORS)
+ */
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+    contentSecurityPolicy: false
+  })
+);
+
+/**
+ * 📦 JSON parser (должен быть ДО routes)
+ */
 app.use(express.json());
 
-// Папка для загрузок
+/**
+ * 📁 uploads folder
+ */
 const uploadsDir = path.resolve("uploads");
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
 
-// Статика с правильными заголовками
-app.use("/uploads", express.static(uploadsDir, {
-  setHeaders: (res) => {
-    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin"); // для картинок
-    res.setHeader("Access-Control-Allow-Origin", "*"); // для CORS
-  }
-}));
+/**
+ * 🖼 static files
+ */
+app.use(
+  "/uploads",
+  express.static(uploadsDir, {
+    setHeaders: (res) => {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+    }
+  })
+);
 
-// Swagger docs
+/**
+ * 📚 Swagger
+ */
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Роуты
+/**
+ * 🚀 API routes
+ */
 app.use("/api/steps", stepRoutes);
 app.use("/api/submissions", submissionRoutes);
 app.use("/api/options", optionRoutes);
 
-// Health check
+/**
+ * ❤️ health check
+ */
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
+});
+
+/**
+ * ❌ 404 handler (ВАЖНО — иначе HTML отдаётся)
+ */
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found"
+  });
+});
+
+/**
+ * 💥 GLOBAL ERROR HANDLER (КРИТИЧНО)
+ */
+app.use((err, req, res, next) => {
+  console.error("🔥 SERVER ERROR:", err);
+
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal server error"
+  });
 });
 
 export default app;
