@@ -6,6 +6,8 @@ export const SubmissionController = {
     try {
       const { name, phone, email, comment, consent, answers } = req.body;
 
+const safeAnswers = Array.isArray(answers) ? answers : [];
+
       // 0. ❗ CHECK DUPLICATE USER (ADDED)
       const existing = await prisma.submission.findFirst({
         where: {
@@ -32,13 +34,13 @@ export const SubmissionController = {
           comment,
           consent,
           answers: {
-            create: answers.map(a => ({
-              questionId: a.questionId,
-              optionId: a.optionId || null,
-              value: a.value || null,
-              numberValue: a.numberValue || null
-            }))
-          }
+  create: safeAnswers.map(a => ({
+    questionId: a.questionId,
+    optionId: a.optionId || null,
+    value: a.value || null,
+    numberValue: a.numberValue || null
+  }))
+}
         },
         include: {
           answers: true
