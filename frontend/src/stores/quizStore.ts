@@ -200,12 +200,17 @@ const answersArray = Object.entries(this.answers).map(([questionIdStr, answer]) 
   }
 
   // CHECKBOX
-  else if (Array.isArray(ans.selected)) {
-    value = ans.selected
-      .map((id) => question?.options?.find((o) => o.id === id)?.text)
-      .filter(Boolean)
-      .join(', ')
-  }
+else if (Array.isArray(ans.selected)) {
+  return ans.selected.map((optionId) => {
+    const option = question?.options?.find((o) => o.id === optionId)
+
+    return {
+      questionId,
+      optionId,
+      value: option?.text ?? null,
+    }
+  })
+}
 
   // CUSTOM INPUT
   if (ans.custom?.trim()) {
