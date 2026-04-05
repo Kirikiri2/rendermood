@@ -25,8 +25,6 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// 🔥 обязательно для preflight
-app.options("*", cors());
 
 /**
  * 🔐 Helmet (без конфликтов с CORS)
