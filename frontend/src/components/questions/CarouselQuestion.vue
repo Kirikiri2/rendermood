@@ -132,243 +132,266 @@ const handleImageError = (e: Event) => {
 }
 </script>
 <template>
-  <div class="carousel-question">
-    <p class="question-text">{{ question.text }}</p>
+  <!-- 1. ЗАТЕМНЕННЫЙ ФОН (Оверлей) -->
+  <div class="quiz-overlay">
+    
+    <!-- 2. БЛАНК -->
+    <div class="quiz-sheet">
+      
+      <!-- ЭФФЕКТ ДВОЙНОЙ КАРТОЧКИ -->
+      <div class="quiz-sheet__shadow-layer"></div>
+      
+      <!-- ВЕРХНЯЯ ЧАСТЬ -->
+      <header class="sheet-header">
+        <div class="progress-bar"></div>
+        <h2 class="sheet-title">{{ question.text }}</h2>
+      </header>
 
-    <div
-      class="carousel-container"
-      @touchstart="handleTouchStart"
-      @touchmove="handleTouchMove"
-      @touchend="handleTouchEnd"
-    >
-      <!-- Кнопка назад -->
-      <button
-        @click="prevSlide"
-        :disabled="currentIndex === 0"
-        class="carousel-btn carousel-btn--prev"
-        aria-label="Предыдущий стиль"
-      >
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-      </button>
-
-      <!-- Слайды -->
-      <div class="carousel-slides">
-        <div
-          v-for="(option, index) in options"
-          :key="option.id"
-          class="carousel-slide"
-          :class="{
-            'carousel-slide--active': index === currentIndex,
-            'carousel-slide--selected': option.id === selectedId,
-          }"
-          :style="{ transform: `translateX(-${currentIndex * 100}%)` }"
-        >
-          <div
-            class="slide-content"
-            @click="selectOption(option.id, index)"
-            :tabindex="0"
-            role="radio"
-            :aria-checked="option.id === selectedId"
-            @keydown.enter="selectOption(option.id, index)"
-            @keydown.space.prevent="selectOption(option.id, index)"
+      <!-- СКРОЛЛИРУЕМАЯ ЗОНА -->
+      <main class="sheet-body">
+        <!-- Горизонтальный скролл с фото -->
+        <div class="carousel-scroll">
+          <div 
+            v-for="(option, index) in question.options"
+            :key="option.id"
+            class="carousel-item"
+            :class="{ 'carousel-item--selected': option.id === selectedId }"
+            @click="selectOption(option.id)"
           >
-            <!-- Изображение -->
-            <div class="image-wrapper">
-              <img
-                :src="option.imageUrl || undefined"
-                :alt="option.text"
-                class="slide-image"
-                loading="lazy"
-                @error="handleImageError"
-              />
-              <div
-                class="image-overlay"
-                :class="{ 'image-overlay--selected': option.id === selectedId }"
-              ></div>
+            <div class="slide-content">
+              <!-- Изображение -->
+              <div class="image-wrapper">
+                <img
+                  v-if="option.imageUrl"
+                  :src="option.imageUrl"
+                  :alt="option.text"
+                  class="slide-image"
+                  loading="lazy"
+                />
+                <div v-else class="slide-placeholder">
+                  <span>Нет фото</span>
+                </div>
+                
+                <!-- Оверлей при выборе -->
+                <div 
+                  class="image-overlay" 
+                  :class="{ 'image-overlay--selected': option.id === selectedId }"
+                ></div>
 
-              <!-- Галочка выбора -->
-              <div v-if="option.id === selectedId" class="checkmark">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="3"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                <!-- Галочка -->
+                <div v-if="option.id === selectedId" class="checkmark">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </div>
               </div>
-            </div>
 
-            <!-- Текст -->
-            <div class="slide-info">
-              <h3 class="slide-title">{{ option.text }}</h3>
+              <!-- Текст -->
+              <div class="slide-info">
+                <h3 class="slide-title">{{ option.text }}</h3>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Кнопка вперёд -->
-      <button
-        @click="nextSlide"
-        :disabled="currentIndex === options.length - 1"
-        class="carousel-btn carousel-btn--next"
-        aria-label="Следующий стиль"
-      >
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
+        <!-- Сообщение об ошибке валидации -->
+        <Transition name="slide">
+          <p v-if="isEmpty" class="validation-msg">
+            <svg class="icon-warn" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            Выберите один вариант
+          </p>
+        </Transition>
+      </main>
+
+      <!-- ПОДВАЛ (Навигация) -->
+      <footer class="sheet-footer">
+        <button 
+          type="button" 
+          class="nav-btn btn-back"
+          @click="store.prevStep"
+          :disabled="store.currentStep === 0" 
+          :style="{ opacity: store.currentStep === 0 ? 0.5 : 1, cursor: store.currentStep === 0 ? 'default' : 'pointer' }"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+
+        <button 
+          type="button" 
+          class="nav-btn btn-next"
+          :class="{ 'btn-disabled': isEmpty }"
+          :disabled="isEmpty"
+          @click="store.nextStep"
+        >
+          Далее
+        </button>
+      </footer>
+
     </div>
-
-    <!-- Индикаторы слайдов -->
-    <div class="carousel-indicators">
-      <button
-        v-for="(option, index) in options"
-        :key="option.id"
-        @click="goToSlide(index)"
-        class="indicator"
-        :class="{ 'indicator--active': index === currentIndex }"
-        :aria-label="`Перейти к слайду ${index + 1}`"
-      >
-        <span class="indicator-dot"></span>
-      </button>
-    </div>
-
-    <!-- Счётчик слайдов -->
-    <div class="slide-counter">{{ currentIndex + 1 }} / {{ options.length }}</div>
-
-    <!-- Подсказка -->
-    <p class="carousel-hint">👆 Нажмите на карточку или используйте стрелки ← → для навигации</p>
   </div>
 </template>
 
 <style scoped>
-.carousel-question {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.question-text {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
-  text-align: center;
-}
-
-/* Контейнер карусели */
-.carousel-container {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  border-radius: 16px;
-  background: #f9fafb;
-}
-
-/* Кнопки навигации */
-.carousel-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: white;
-  border: 2px solid #e5e7eb;
-  color: #374151;
-  cursor: pointer;
+/* =========================================
+   1. OVERLAY
+   ========================================= */
+.quiz-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.carousel-btn:hover:not(:disabled) {
-  background: #007cdd;
-  border-color: #007cdd;
-  color: white;
-  transform: translateY(-50%) scale(1.1);
-}
-
-.carousel-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.carousel-btn--prev {
-  left: 12px;
-}
-.carousel-btn--next {
-  right: 12px;
-}
-
-/* Слайды */
-.carousel-slides {
-  display: flex;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 100%;
-}
-
-.carousel-slide {
-  min-width: 100%;
-  padding: 16px;
+  z-index: 1000;
+  padding: 20px;
   box-sizing: border-box;
-  opacity: 0.6;
-  transition:
-    opacity 0.3s,
-    transform 0.3s;
 }
 
-.carousel-slide--active {
+/* =========================================
+   2. SHEET
+   ========================================= */
+.quiz-sheet {
+  position: relative;
+  width: 95vw;
+  max-width: 1050px;
+  height: 85vh;
+  min-height: 600px;
+  max-height: 750px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', system-ui, sans-serif;
+  z-index: 1;
+}
+
+/* =========================================
+   3. SHADOW LAYER
+   ========================================= */
+.quiz-sheet__shadow-layer {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: #B3D4F0;
+  border-radius: 8px;
+  transform: translate(20px, 20px);
+  z-index: 0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+/* =========================================
+   4. HEADER
+   ========================================= */
+.sheet-header {
+  border-radius: 8px 8px 0 0;
+  z-index: 1;
+  padding: 40px 50px 20px;
+  position: relative;
+  flex-shrink: 0;
+  background: #FFFFFF;
+}
+
+.progress-bar {
+  position: absolute;
+  top: 20px; left: 50px;
+  width: 250px;
+  height: 6px;
+  background: #3B82F6;
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sheet-title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.2;
+}
+
+/* =========================================
+   5. BODY
+   ========================================= */
+.sheet-body {
+  z-index: 1;
+  flex: 1;
+  overflow-y: auto;
+  padding: 30px 50px;
+  display: flex;
+  flex-direction: column;
+  background: #FFFFFF;
+  gap: 20px;
+  
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 #F1F5F9;
+}
+
+.sheet-body::-webkit-scrollbar { width: 8px; }
+.sheet-body::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 4px; }
+.sheet-body::-webkit-scrollbar-thumb { background-color: #94A3B8; border-radius: 4px; }
+
+/* =========================================
+   6. CAROUSEL SCROLL (ГОРИЗОНТАЛЬНЫЙ СКРОЛЛ)
+   ========================================= */
+.carousel-scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: 10px 5px 20px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Скрыть скроллбар Firefox */
+}
+
+.carousel-scroll::-webkit-scrollbar {
+  display: none; /* Скрыть скроллбар Chrome/Safari */
+}
+
+.carousel-item {
+  flex: 0 0 280px; /* Фиксированная ширина карточки */
+  scroll-snap-align: center;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.carousel-item:hover {
+  opacity: 0.8;
+  transform: translateY(-4px);
+}
+
+.carousel-item--selected {
   opacity: 1;
-  transform: scale(1);
+  transform: scale(1.05);
 }
 
 /* Контент слайда */
 .slide-content {
-  cursor: pointer;
+  background: white;
   border-radius: 12px;
   overflow: hidden;
-  background: white;
   border: 3px solid transparent;
   transition: all 0.3s;
-  outline: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.slide-content:focus-visible {
-  border-color: #007cdd;
-  box-shadow: 0 0 0 4px rgba(0, 124, 221, 0.2);
-}
-
-.slide-content:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.carousel-slide--selected .slide-content {
-  border-color: #007cdd;
-  box-shadow: 0 8px 24px rgba(0, 124, 221, 0.2);
+.carousel-item--selected .slide-content {
+  border-color: #3B82F6;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
 }
 
 /* Изображение */
 .image-wrapper {
   position: relative;
   width: 100%;
-  height: 280px;
+  height: 320px;
   overflow: hidden;
+  background: #F1F5F9;
 }
 
 .slide-image {
@@ -378,24 +401,31 @@ const handleImageError = (e: Event) => {
   transition: transform 0.4s;
 }
 
-.slide-content:hover .slide-image {
+.carousel-item--selected .slide-image {
   transform: scale(1.05);
 }
 
-.carousel-slide--selected .slide-image {
-  transform: scale(1.08);
+.slide-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E2E8F0;
+  color: #94A3B8;
+  font-size: 16px;
 }
 
 /* Оверлей */
 .image-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0);
+  background: rgba(59, 130, 246, 0);
   transition: background 0.3s;
 }
 
-.carousel-slide--selected .image-overlay--selected {
-  background: rgba(0, 124, 221, 0.15);
+.image-overlay--selected {
+  background: rgba(59, 130, 246, 0.15);
 }
 
 /* Галочка */
@@ -405,26 +435,13 @@ const handleImageError = (e: Event) => {
   right: 16px;
   width: 48px;
   height: 48px;
-  background: #007cdd;
+  background: #3B82F6;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: 0 4px 12px rgba(0, 124, 221, 0.4);
-  animation: scaleIn 0.3s ease-out;
-}
-
-@keyframes scaleIn {
-  0% {
-    transform: scale(0);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-  }
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
 /* Информация */
@@ -435,105 +452,120 @@ const handleImageError = (e: Event) => {
 }
 
 .slide-title {
-  font-size: 1.25rem;
+  font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
+  color: #111827;
   margin: 0;
 }
 
-/* Индикаторы */
-.carousel-indicators {
+/* =========================================
+   7. VALIDATION
+   ========================================= */
+.validation-msg {
+  color: #EF4444;
+  font-size: 16px;
   display: flex;
+  align-items: center;
   gap: 8px;
-  justify-content: center;
   margin-top: 8px;
 }
 
-.indicator {
+.icon-warn {
+  width: 20px;
+  height: 20px;
+}
+
+/* =========================================
+   8. FOOTER
+   ========================================= */
+.sheet-footer {
+  border-radius: 0 0 8px 8px;
+  z-index: 1;
+  height: 80px;
+  background-color: #F0F9FF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 50px;
+  flex-shrink: 0;
+}
+
+.nav-btn {
   background: none;
   border: none;
-  padding: 8px;
   cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: background 0.2s;
 }
 
-.indicator:hover {
-  background: rgba(0, 124, 221, 0.1);
-}
+.nav-btn:hover { background: rgba(0, 0, 0, 0.05); }
 
-.indicator-dot {
-  display: block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #d1d5db;
-  transition: all 0.3s;
+.nav-btn.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #9CA3AF;
 }
+.nav-btn.btn-disabled:hover { background: none; }
 
-.indicator--active .indicator-dot {
-  background: #007cdd;
-  transform: scale(1.3);
-}
+/* =========================================
+   9. ANIMATIONS
+   ========================================= */
+.slide-enter-active, .slide-leave-active { transition: all 0.3s ease; }
+.slide-enter-from, .slide-leave-to { opacity: 0; transform: translateY(-10px); }
 
-/* Счётчик */
-.slide-counter {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-/* Подсказка */
-.carousel-hint {
-  font-size: 0.875rem;
-  color: #9ca3af;
-  text-align: center;
-  margin-top: 4px;
-}
-
-/* 📱 Адаптив */
-@media (max-width: 640px) {
-  .image-wrapper {
-    height: 220px;
+/* =========================================
+   АДАПТИВ
+   ========================================= */
+@media (max-width: 768px) {
+  .quiz-sheet {
+    height: 100vh;
+    width: 100vw;
+    border-radius: 0;
+    max-height: none;
   }
-  .carousel-btn {
-    width: 36px;
-    height: 36px;
+  
+  .quiz-sheet__shadow-layer { display: none; }
+  .sheet-header { padding: 25px 20px 15px; }
+  .sheet-title { font-size: 22px; }
+  .progress-bar { left: 20px; width: 150px !important; }
+  .sheet-body { padding: 20px; }
+  
+  .carousel-item {
+    flex: 0 0 240px; /* Меньше на мобильных */
   }
-  .carousel-btn--prev {
-    left: 8px;
+  
+  .image-wrapper { height: 280px; }
+  .slide-title { font-size: 16px; }
+  
+  .sheet-footer {
+    padding: 0 20px;
+    height: 70px;
   }
-  .carousel-btn--next {
-    right: 8px;
-  }
-  .slide-title {
-    font-size: 1.125rem;
-  }
-  .checkmark {
-    width: 40px;
-    height: 40px;
-  }
-}
-
-/* 🖥️ Десктоп */
-@media (min-width: 768px) {
-  .carousel-slides {
-    gap: 16px;
-  }
-  .carousel-slide {
-    min-width: calc(50% - 8px);
-  }
-  .image-wrapper {
-    height: 320px;
+  
+  .nav-btn {
+    font-size: 17px;
+    padding: 8px 14px;
   }
 }
 
-@media (min-width: 1024px) {
-  .carousel-slide {
-    min-width: calc(33.333% - 11px);
+@media (max-width: 374px) {
+  .carousel-item {
+    flex: 0 0 200px; /* Ещё меньше на маленьких экранах */
   }
-  .image-wrapper {
-    height: 360px;
-  }
+  
+  .image-wrapper { height: 240px; }
+  .slide-title { font-size: 14px; }
+  
+  .sheet-header { padding: 20px 15px 12px; }
+  .sheet-title { font-size: 18px; }
+  .sheet-footer { padding: 0 15px; height: 60px; }
+  .nav-btn { font-size: 15px; padding: 6px 12px; }
 }
 </style>

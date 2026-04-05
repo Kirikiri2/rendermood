@@ -140,26 +140,25 @@ const handleCheckbox = (e: Event) => {
 }
 
 /* =========================================
-   2. SHEET (Бланк)
+   2. SHEET
    ========================================= */
 .quiz-sheet {
   position: relative;
   width: 95vw;
   max-width: 1050px;
-  height: 80vh;
-  min-height: 450px;
-  max-height: 705px;
+  height: 85vh;
+  min-height: 600px;
+  max-height: 750px;
   background: #FFFFFF;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   font-family: 'Inter', system-ui, sans-serif;
   z-index: 1;
-  /* Убираем жесткий сдвиг для лучшей адаптивности */
 }
 
 /* =========================================
-   3. SHADOW LAYER (Подложка)
+   3. SHADOW LAYER
    ========================================= */
 .quiz-sheet__shadow-layer {
   position: absolute;
@@ -176,9 +175,9 @@ const handleCheckbox = (e: Event) => {
    4. HEADER
    ========================================= */
 .sheet-header {
-  border-radius: 5px 5px 0 0;
+  border-radius: 8px 8px 0 0;
   z-index: 1;
-  padding: 40px 50px 40px;
+  padding: 40px 50px 15px;
   position: relative;
   flex-shrink: 0;
   background: #FFFFFF;
@@ -202,24 +201,17 @@ const handleCheckbox = (e: Event) => {
 }
 
 /* =========================================
-   5. BODY
+   5. BODY (БЕЗ СКРОЛЛА - всё помещается)
    ========================================= */
 .sheet-body {
   z-index: 1;
   flex: 1;
-  overflow-y: auto;
-  padding: 40px 50px 30px;
+  overflow: visible; /* ✅ Убираем скролл контейнера */
+  padding: 20px 50px 20px;
   display: flex;
   flex-direction: column;
   background: #FFFFFF;
-  
-  scrollbar-width: thin;
-  scrollbar-color: #CBD5E1 #F1F5F9;
 }
-
-.sheet-body::-webkit-scrollbar { width: 8px; }
-.sheet-body::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 4px; }
-.sheet-body::-webkit-scrollbar-thumb { background-color: #94A3B8; border-radius: 4px; }
 
 /* =========================================
    6. FORM CONTAINER
@@ -227,8 +219,7 @@ const handleCheckbox = (e: Event) => {
 .form-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 16px;
+  gap: 12px; /* ✅ Уменьшили gap */
   max-width: 600px;
   margin: 0 auto;
   width: 100%;
@@ -240,8 +231,8 @@ const handleCheckbox = (e: Event) => {
 
 .form-input {
   width: 100%;
-  padding: 16px 20px;
-  font-size: 18px;
+  padding: 14px 18px; /* ✅ Чуть меньше padding */
+  font-size: 17px;
   border: 2px solid #B3D4F0;
   border-radius: 8px;
   outline: none;
@@ -261,9 +252,24 @@ const handleCheckbox = (e: Event) => {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
+/* ✅ ТЕКСТОВОЕ ПОЛЕ - СКРОЛЛИТСЯ ВНУТРИ */
 .form-textarea {
-  resize: vertical;
-  min-height: 80px;
+  resize: none; /* Запрещаем ручное изменение размера */
+  height: 80px; /* Фиксированная высота */
+  overflow-y: auto; /* ✅ Включаем скролл только внутри textarea */
+  max-height: 120px; /* Максимальная высота перед скроллом */
+}
+
+.form-textarea::-webkit-scrollbar {
+  width: 6px;
+}
+.form-textarea::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-radius: 3px;
+}
+.form-textarea::-webkit-scrollbar-thumb {
+  background-color: #CBD5E1;
+  border-radius: 3px;
 }
 
 /* =========================================
@@ -274,7 +280,7 @@ const handleCheckbox = (e: Event) => {
   align-items: flex-start;
   gap: 10px;
   cursor: pointer;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .agreement-checkbox {
@@ -296,8 +302,8 @@ const handleCheckbox = (e: Event) => {
    8. SUBMIT BUTTON
    ========================================= */
 .submit-btn {
-  margin-top: 20px;
-  padding: 18px 60px;
+  margin-top: 12px; /* ✅ Уменьшили отступ */
+  padding: 16px 60px;
   font-size: 18px;
   font-weight: 600;
   color: #FFFFFF;
@@ -323,7 +329,7 @@ const handleCheckbox = (e: Event) => {
    9. FOOTER
    ========================================= */
 .sheet-footer {
-  border-radius: 0 0 5px 5px;
+  border-radius: 0 0 8px 8px;
   z-index: 1;
   height: 80px;
   background-color: #F0F9FF;
@@ -369,22 +375,69 @@ const handleCheckbox = (e: Event) => {
   }
   
   .sheet-title { font-size: 26px; }
+  .progress-bar { width: 250px; }
 }
 
 @media (max-width: 768px) {
   .quiz-sheet {
-    height: 95vh;
+    height: 100vh;
     width: 100vw;
     border-radius: 0;
+    max-height: none;
   }
   
   .quiz-sheet__shadow-layer { display: none; }
-  .sheet-header { padding: 30px 20px 15px; }
+  .sheet-header { padding: 25px 20px 10px; }
   .sheet-title { font-size: 22px; }
   .progress-bar { left: 20px; width: 150px !important; }
-  .sheet-body { padding: 20px; }
-  .form-input { padding: 14px 16px; font-size: 16px; }
-  .submit-btn { width: 100%; padding: 16px; }
-  .sheet-footer { padding: 0 20px; height: 70px; }
+  .sheet-body { padding: 15px 20px 15px; }
+  
+  .form-container {
+    gap: 10px;
+  }
+  
+  .form-input { 
+    padding: 12px 16px; 
+    font-size: 16px; 
+  }
+  
+  .form-textarea {
+    height: 60px;
+    max-height: 100px;
+  }
+  
+  .checkbox-agreement {
+    margin-top: 0;
+  }
+  
+  .agreement-text {
+    font-size: 13px;
+  }
+  
+  .submit-btn { 
+    width: 100%; 
+    padding: 14px; 
+    margin-top: 8px;
+  }
+  
+  .sheet-footer { 
+    padding: 0 20px; 
+    height: 70px; 
+  }
+  
+  .nav-btn {
+    font-size: 17px;
+    padding: 8px 14px;
+  }
+}
+
+@media (max-width: 374px) {
+  .sheet-header { padding: 20px 15px 10px; }
+  .sheet-title { font-size: 18px; }
+  .sheet-body { padding: 10px 15px 10px; }
+  .form-input { padding: 10px 14px; font-size: 15px; }
+  .submit-btn { padding: 12px; font-size: 16px; }
+  .sheet-footer { padding: 0 15px; height: 60px; }
+  .nav-btn { font-size: 15px; padding: 6px 12px; }
 }
 </style>
