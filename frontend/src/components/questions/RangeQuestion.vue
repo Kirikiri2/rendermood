@@ -199,7 +199,7 @@ const handleBlur = () => {
   </div>
 </template>
 
-<style scoped>
+ <style scoped>
 @import '@/assets/quiz_layout.css';
 
 /* =========================================
@@ -208,6 +208,7 @@ const handleBlur = () => {
 .range-container {
   width: 100%;
   max-width: 800px;
+  margin: 0 auto; /* ✅ Гарантирует строгое центрирование */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -228,11 +229,26 @@ const handleBlur = () => {
 .house {
   position: absolute;
   bottom: 0;
-  transform: translateX(-50%);
+  transform: translateX(-50%); /* ✅ Центрирование по горизонтали */
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: left 0.1s linear;
+  transition: left 0.2s ease; /* Плавное перемещение при скролле */
+  
+  /* ✅ Анимация появления (домик "вырастает" при загрузке) */
+  animation: housePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Анимация роста */
+@keyframes housePop {
+  0% { 
+    transform: translateX(-50%) scale(0.2); 
+    opacity: 0; 
+  }
+  100% { 
+    transform: translateX(-50%) scale(1); 
+    opacity: 1; 
+  }
 }
 
 /* Крыша */
@@ -288,7 +304,6 @@ const handleBlur = () => {
 
 /* 🎚️ Кастомный слайдер */
 .custom-slider {
-  -webkit-appearance: none;
   width: 100%;
   height: 8px;
   border-radius: 4px;
