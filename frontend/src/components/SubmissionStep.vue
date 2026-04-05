@@ -20,13 +20,13 @@ const handleCheckbox = (e: Event) => {
 <template>
   <!-- 1. ЗАТЕМНЕННЫЙ ФОН (Оверлей) -->
   <div class="quiz-overlay">
-    
+
     <!-- 2. БЛАНК -->
     <div class="quiz-sheet">
-      
+
       <!-- ЭФФЕКТ ДВОЙНОЙ КАРТОЧКИ -->
       <div class="quiz-sheet__shadow-layer"></div>
-      
+
       <!-- ВЕРХНЯЯ ЧАСТЬ -->
       <header class="sheet-header">
         <div class="progress-bar"></div>
@@ -38,79 +38,48 @@ const handleCheckbox = (e: Event) => {
         <div class="form-container">
           <!-- Имя -->
           <div class="form-group">
-            <input
-              v-model="store.form.name"
-              @input="handleInput($event, 'name')"
-              type="text"
-              class="form-input"
-              placeholder="Имя"
-            />
+            <input v-model="store.form.name" @input="handleInput($event, 'name')" type="text" class="form-input"
+              placeholder="Имя" />
           </div>
 
           <!-- Телефон -->
           <div class="form-group">
-            <input
-              v-model="store.form.phone"
-              @input="handleInput($event, 'phone')"
-              type="tel"
-              class="form-input"
-              placeholder="Номер телефона"
-            />
+            <input v-model="store.form.phone" @input="handleInput($event, 'phone')" type="tel" class="form-input"
+              placeholder="Номер телефона" />
           </div>
 
           <!-- Email -->
           <div class="form-group">
-            <input
-              v-model="store.form.email"
-              @input="handleInput($event, 'email')"
-              type="email"
-              class="form-input"
-              placeholder="Email"
-            />
+            <input v-model="store.form.email" @input="handleInput($event, 'email')" type="email" class="form-input"
+              placeholder="Email" />
           </div>
 
           <!-- Комментарий -->
           <div class="form-group">
-            <textarea
-              v-model="store.form.comment"
-              @input="handleInput($event, 'comment')"
-              class="form-input form-textarea"
-              placeholder="Коментарий"
-              rows="3"
-            />
+            <textarea v-model="store.form.comment" @input="handleInput($event, 'comment')"
+              class="form-input form-textarea" placeholder="Коментарий" rows="3" />
           </div>
 
           <!-- Чекбокс согласия -->
           <label class="checkbox-agreement">
-            <input
-              v-model="store.form.agree"
-              @change="handleCheckbox($event)"
-              type="checkbox"
-              class="agreement-checkbox"
-            />
+            <input v-model="store.form.agree" type="checkbox" class="agreement-checkbox" />
             <span class="agreement-text">
               Я соглашаюсь на обработку персональных данных
             </span>
           </label>
 
           <!-- Кнопка отправки -->
-          <button 
-            type="button" 
-            class="submit-btn"
-            @click="store.submitForm"
-          >
+          <button type="button" class="submit-btn" @click="store.submitForm">
             Получить консультацию
           </button>
         </div>
       </main>
       <!-- ПОДВАЛ (Навигация) -->
       <footer class="sheet-footer">
-        <button 
-          type="button" 
-          class="nav-btn btn-back"
-          @click="store.prevStep"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <button type="button" class="nav-btn btn-back" @click="store.prevStep">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
         </button>
 
         <!-- Пустой блок для баланса -->
@@ -127,8 +96,10 @@ const handleCheckbox = (e: Event) => {
    ========================================= */
 .quiz-overlay {
   position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
@@ -162,8 +133,10 @@ const handleCheckbox = (e: Event) => {
    ========================================= */
 .quiz-sheet__shadow-layer {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: #B3D4F0;
   border-radius: 8px;
   transform: translate(20px, 20px);
@@ -185,7 +158,8 @@ const handleCheckbox = (e: Event) => {
 
 .progress-bar {
   position: absolute;
-  top: 20px; left: 50px;
+  top: 20px;
+  left: 50px;
   width: 750px;
   height: 6px;
   background: #3B82F6;
@@ -206,7 +180,8 @@ const handleCheckbox = (e: Event) => {
 .sheet-body {
   z-index: 1;
   flex: 1;
-  overflow: visible; /* ✅ Убираем скролл контейнера */
+  overflow: visible;
+  /* ✅ Убираем скролл контейнера */
   padding: 20px 50px 20px;
   display: flex;
   flex-direction: column;
@@ -219,7 +194,8 @@ const handleCheckbox = (e: Event) => {
 .form-container {
   display: flex;
   flex-direction: column;
-  gap: 12px; /* ✅ Уменьшили gap */
+  gap: 12px;
+  /* ✅ Уменьшили gap */
   max-width: 600px;
   margin: 0 auto;
   width: 100%;
@@ -231,7 +207,8 @@ const handleCheckbox = (e: Event) => {
 
 .form-input {
   width: 100%;
-  padding: 14px 18px; /* ✅ Чуть меньше padding */
+  padding: 14px 18px;
+  /* ✅ Чуть меньше padding */
   font-size: 17px;
   border: 2px solid #B3D4F0;
   border-radius: 8px;
@@ -254,19 +231,25 @@ const handleCheckbox = (e: Event) => {
 
 /* ✅ ТЕКСТОВОЕ ПОЛЕ - СКРОЛЛИТСЯ ВНУТРИ */
 .form-textarea {
-  resize: none; /* Запрещаем ручное изменение размера */
-  height: 80px; /* Фиксированная высота */
-  overflow-y: auto; /* ✅ Включаем скролл только внутри textarea */
-  max-height: 120px; /* Максимальная высота перед скроллом */
+  resize: none;
+  /* Запрещаем ручное изменение размера */
+  height: 80px;
+  /* Фиксированная высота */
+  overflow-y: auto;
+  /* ✅ Включаем скролл только внутри textarea */
+  max-height: 120px;
+  /* Максимальная высота перед скроллом */
 }
 
 .form-textarea::-webkit-scrollbar {
   width: 6px;
 }
+
 .form-textarea::-webkit-scrollbar-track {
   background: #F1F5F9;
   border-radius: 3px;
 }
+
 .form-textarea::-webkit-scrollbar-thumb {
   background-color: #CBD5E1;
   border-radius: 3px;
@@ -302,7 +285,8 @@ const handleCheckbox = (e: Event) => {
    8. SUBMIT BUTTON
    ========================================= */
 .submit-btn {
-  margin-top: 12px; /* ✅ Уменьшили отступ */
+  margin-top: 12px;
+  /* ✅ Уменьшили отступ */
   padding: 16px 60px;
   font-size: 18px;
   font-weight: 600;
@@ -355,13 +339,23 @@ const handleCheckbox = (e: Event) => {
   transition: background 0.2s;
 }
 
-.nav-btn:hover { background: rgba(0, 0, 0, 0.05); }
+.nav-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
 
 /* =========================================
    10. ANIMATIONS
    ========================================= */
-.slide-enter-active, .slide-leave-active { transition: all 0.3s ease; }
-.slide-enter-from, .slide-leave-to { opacity: 0; transform: translateY(-10px); }
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
 
 /* =========================================
    АДАПТИВ
@@ -373,9 +367,14 @@ const handleCheckbox = (e: Event) => {
     max-height: 90vh;
     max-width: 1100px;
   }
-  
-  .sheet-title { font-size: 26px; }
-  .progress-bar { width: 250px; }
+
+  .sheet-title {
+    font-size: 26px;
+  }
+
+  .progress-bar {
+    width: 250px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -385,46 +384,61 @@ const handleCheckbox = (e: Event) => {
     border-radius: 0;
     max-height: none;
   }
-  
-  .quiz-sheet__shadow-layer { display: none; }
-  .sheet-header { padding: 25px 20px 10px; }
-  .sheet-title { font-size: 22px; }
-  .progress-bar { left: 20px; width: 150px !important; }
-  .sheet-body { padding: 15px 20px 15px; }
-  
+
+  .quiz-sheet__shadow-layer {
+    display: none;
+  }
+
+  .sheet-header {
+    padding: 25px 20px 10px;
+  }
+
+  .sheet-title {
+    font-size: 22px;
+  }
+
+  .progress-bar {
+    left: 20px;
+    width: 150px !important;
+  }
+
+  .sheet-body {
+    padding: 15px 20px 15px;
+  }
+
   .form-container {
     gap: 10px;
   }
-  
-  .form-input { 
-    padding: 12px 16px; 
-    font-size: 16px; 
+
+  .form-input {
+    padding: 12px 16px;
+    font-size: 16px;
   }
-  
+
   .form-textarea {
     height: 60px;
     max-height: 100px;
   }
-  
+
   .checkbox-agreement {
     margin-top: 0;
   }
-  
+
   .agreement-text {
     font-size: 13px;
   }
-  
-  .submit-btn { 
-    width: 100%; 
-    padding: 14px; 
+
+  .submit-btn {
+    width: 100%;
+    padding: 14px;
     margin-top: 8px;
   }
-  
-  .sheet-footer { 
-    padding: 0 20px; 
-    height: 70px; 
+
+  .sheet-footer {
+    padding: 0 20px;
+    height: 70px;
   }
-  
+
   .nav-btn {
     font-size: 17px;
     padding: 8px 14px;
@@ -432,12 +446,36 @@ const handleCheckbox = (e: Event) => {
 }
 
 @media (max-width: 374px) {
-  .sheet-header { padding: 20px 15px 10px; }
-  .sheet-title { font-size: 18px; }
-  .sheet-body { padding: 10px 15px 10px; }
-  .form-input { padding: 10px 14px; font-size: 15px; }
-  .submit-btn { padding: 12px; font-size: 16px; }
-  .sheet-footer { padding: 0 15px; height: 60px; }
-  .nav-btn { font-size: 15px; padding: 6px 12px; }
+  .sheet-header {
+    padding: 20px 15px 10px;
+  }
+
+  .sheet-title {
+    font-size: 18px;
+  }
+
+  .sheet-body {
+    padding: 10px 15px 10px;
+  }
+
+  .form-input {
+    padding: 10px 14px;
+    font-size: 15px;
+  }
+
+  .submit-btn {
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  .sheet-footer {
+    padding: 0 15px;
+    height: 60px;
+  }
+
+  .nav-btn {
+    font-size: 15px;
+    padding: 6px 12px;
+  }
 }
 </style>
