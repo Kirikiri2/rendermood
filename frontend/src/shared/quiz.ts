@@ -44,7 +44,7 @@ export interface FormData {
   phone: string
   email: string
   comment: string
-  agree: boolean
+  consent: boolean
 }
 
 export interface SubmissionResult {

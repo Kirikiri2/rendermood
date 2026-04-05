@@ -17,7 +17,7 @@ export const useQuizStore = defineStore('quiz', {
           phone: '',
           email: '',
           comment: '',
-          agree: false,
+          consent: false,
         } as FormData),
     }
   },
@@ -226,7 +226,7 @@ const answersArray = Object.entries(this.answers).map(([questionIdStr, answer]) 
     numberValue, // ✅ теперь правильно
   }
 })
-if (!this.form.agree) {
+if (!this.form.consent) {
   throw new Error('Необходимо согласие на обработку данных')
 }
     const payload: QuizSubmission = {
@@ -234,7 +234,7 @@ if (!this.form.agree) {
       phone: this.form.phone.trim(),
       email: this.form.email?.trim() || '',
       comment: this.form.comment?.trim() || '',
-      consent: Boolean(this.form.agree),
+      consent: Boolean(this.form.consent),
       answers: answersArray,
     }
 
@@ -304,7 +304,7 @@ if (!this.form.agree) {
         phone: '',
         email: '',
         comment: '',
-        agree: false,
+        consent: false,
       }
       this.currentStep = 0
     },
