@@ -15,7 +15,7 @@ const app = express();
 
 // Разрешаем CORS только для твоего фронтенда
 app.use(cors({
-  origin: ["https://rendermood.vercel.app"]
+  origin: ["https://rendermood.vercel.app", "http://localhost:5173"]
 }));
 
 // Helmet без Cross-Origin-Resource-Policy
