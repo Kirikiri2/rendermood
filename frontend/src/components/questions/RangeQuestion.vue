@@ -102,311 +102,407 @@ const handleBlur = () => {
 </script>
 
 <template>
-  <div class="range-question">
+  <!-- 1. ЗАТЕМНЕННЫЙ ФОН (Оверлей) -->
+  <div class="quiz-overlay">
     
-    <!-- 🔝 Домик сверху -->
-    <div class="house-wrapper">
-      <div 
-        class="house" 
-        :style="{ 
-          left: `${housePosition}%`,
-          transform: `translateX(-50%) scale(${scale})` 
-        }"
-      >
-        <div class="roof" :style="{ borderBottomColor: houseColor }"></div>
-        <div class="body" :style="{ borderColor: houseColor }">
-          <div class="door"></div>
-          <div class="window"></div>
-        </div>
-        <!-- Индикатор, если значение вне диапазона -->
-        <span v-if="value < SLIDER_MIN || value > SLIDER_MAX" class="house-badge">!</span>
-      </div>
-      <div 
-        class="house-arrow" 
-        :style="{ 
-          left: `${housePosition}%`, 
-          background: `linear-gradient(to bottom, ${houseColor}, transparent)` 
-        }"
-      ></div>
-    </div>
-
-    <!-- 🎚️ Слайдер (всегда в пределах диапазона) -->
-    <input
-      type="range"
-      :min="SLIDER_MIN"
-      :max="SLIDER_MAX"
-      step="1"
-      v-model.number="value"
-      class="slider"
-    />
-
-    <!-- 🔢 Значение + инпут -->
-    <div class="value-controls">
-      <div class="value-display">
-        <span class="value-number">{{ value }}</span>
-        <span class="value-unit">м²</span>
-      </div>
+    <!-- 2. БЛАНК -->
+    <div class="quiz-sheet">
       
-      <div class="input-wrapper">
-        <input
-          type="text"
-          inputmode="numeric"
-          pattern="-?[0-9]*"
-          :value="inputBuffer"
-          @input="handleNumberInput"
-          @focus="handleFocus"
-          @blur="handleBlur"
-          class="number-input"
-          placeholder="введите"
-        />
-        <span class="input-unit">м²</span>
-      </div>
-    </div>
+      <!-- ЭФФЕКТ ДВОЙНОЙ КАРТОЧКИ -->
+      <div class="quiz-sheet__shadow-layer"></div>
+      
+      <!-- ВЕРХНЯЯ ЧАСТЬ -->
+      <header class="sheet-header">
+        <div class="progress-bar"></div>
+        <h2 class="sheet-title">{{ question.text }}</h2>
+      </header>
 
-    <!-- 💡 Подсказка -->
-    <div class="range-hint">
-      Рекомендованный диапазон: {{ SLIDER_MIN }}–{{ SLIDER_MAX }} м²
-      <span v-if="value < SLIDER_MIN || value > SLIDER_MAX" class="hint-custom">
-        • Вы ввели нестандартное значение
-      </span>
-    </div>
+      <!-- СКРОЛЛИРУЕМАЯ ЗОНА -->
+      <main class="sheet-body">
+        
+        <div class="range-container">
+          
+          <!-- 🏠 Домик (Позиционируется через :style) -->
+          <div class="house-wrapper">
+            <div class="house" :style="{ left: `${housePosition}%` }">
+              <!-- Крыша -->
+              <div class="roof"></div>
+              <!-- Тело домика -->
+              <div class="body">
+                <div class="window"></div>
+                <div class="door"></div>
+              </div>
+              <!-- Стрелка вниз -->
+              <div class="arrow"></div>
+            </div>
+          </div>
 
+          <!-- 🎚️ Слайдер (С двухцветным фоном) -->
+          <input
+            type="range"
+            :min="SLIDER_MIN"
+            :max="SLIDER_MAX"
+            step="1"
+            v-model.number="value"
+            class="custom-slider"
+            :style="{ 
+              background: `linear-gradient(to right, #3B82F6 ${housePosition}%, #E0F2FE ${housePosition}%)` 
+            }"
+          />
+
+          <!-- 🔢 Крупное значение -->
+          <div class="value-display">
+            <span class="value-number">{{ value }}</span>
+            <span class="value-unit">кв.м</span>
+          </div>
+
+          <!-- ✏️ Поле ввода (Для ручного ввода, как в старом коде) -->
+          <div class="input-row">
+            <input
+              type="text"
+              inputmode="numeric"
+              :value="inputBuffer"
+              @input="handleNumberInput"
+              @focus="handleFocus"
+              @blur="handleBlur"
+              class="manual-input"
+              placeholder="Введите вручную"
+            />
+          </div>
+
+        </div>
+
+      </main>
+
+      <!-- ПОДВАЛ (Навигация) -->
+      <footer class="sheet-footer">
+        <button 
+          type="button" 
+          class="nav-btn btn-back"
+          @click="store.prevStep"
+          :disabled="store.currentStep === 0" 
+          :style="{ opacity: store.currentStep === 0 ? 0.5 : 1, cursor: store.currentStep === 0 ? 'default' : 'pointer' }"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+
+        <button 
+          type="button" 
+          class="nav-btn btn-next"
+          @click="store.nextStep"
+        >
+          Далее
+        </button>
+      </footer>
+
+    </div>
   </div>
 </template>
 
 <style scoped>
-.range-question {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 0;
-}
-
-/* 🔝 Контейнер для домика */
-.house-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: 400px;
-  height: 90px;
-}
-
-/* 🏠 Домик */
-.house {
-  position: absolute;
-  bottom: 28px;
-  transform-origin: bottom center;
-  pointer-events: none;
-  transition: transform 0.15s ease-out, opacity 0.2s;
-  will-change: transform, left;
-}
-
-/* Бейдж "!" для нестандартных значений */
-.house-badge {
-  position: absolute;
-  top: -8px;
-  right: -12px;
-  background: #ef4444;
-  color: white;
-  font-size: 0.75rem;
-  font-weight: bold;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
+/* =========================================
+   1. OVERLAY (Стандартный)
+   ========================================= */
+.quiz-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  animation: pulse 2s infinite;
+  z-index: 1000;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+/* =========================================
+   2. SHEET (Стандартный)
+   ========================================= */
+.quiz-sheet {
+  position: relative;
+  width: 95vw;
+  max-width: 1050px;
+  height: 80vh;
+  min-height: 600px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', system-ui, sans-serif;
+  z-index: 1;
 }
 
-/* 🔻 Стрелочка */
-.house-arrow {
+/* =========================================
+   3. SHADOW LAYER (Стандартный)
+   ========================================= */
+.quiz-sheet__shadow-layer {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: #B3D4F0;
+  border-radius: 8px;
+  transform: translate(20px, 20px);
+  z-index: 0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+/* =========================================
+   4. HEADER (Стандартный)
+   ========================================= */
+.sheet-header {
+  border-radius: 8px 8px 0 0;
+  z-index: 1;
+  padding: 40px 50px 20px;
+  position: relative;
+  flex-shrink: 0;
+  background: #FFFFFF;
+}
+
+.progress-bar {
+  position: absolute;
+  top: 20px; left: 50px;
+  width: 250px;
+  height: 6px;
+  background: #3B82F6;
+  border-radius: 2px;
+}
+
+.sheet-title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.2;
+}
+
+/* =========================================
+   5. BODY (Центрирование контента)
+   ========================================= */
+.sheet-body {
+  z-index: 1;
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Центрируем слайдер */
+  justify-content: center;
+  background: #FFFFFF;
+}
+
+/* =========================================
+   6. RANGE UI (Стили слайдера)
+   ========================================= */
+.range-container {
+  width: 100%;
+  max-width: 800px; /* Широкий слайдер как на картинке */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  padding: 20px 0;
+}
+
+/* 🏠 Обертка домика */
+.house-wrapper {
+  position: relative;
+  width: 100%;
+  height: 80px; /* Место для домика над полосой */
+  margin-bottom: -10px; /* Накладываем на слайдер */
+  z-index: 10;
+}
+
+/* 🏠 Сам домик */
+.house {
   position: absolute;
   bottom: 0;
-  width: 2px;
-  height: 20px;
-  transform: translateX(-50%);
-  opacity: 0.7;
-  transition: background 0.2s;
+  transform: translateX(-50%); /* Центрируем относительно точки */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: left 0.1s linear; /* Плавное движение */
 }
 
 /* Крыша */
 .roof {
   width: 0;
   height: 0;
-  border-left: 20px solid transparent;
-  border-right: 20px solid transparent;
-  border-bottom: 18px solid #007CDD;
-  margin: 0 auto;
-  transition: border-bottom-color 0.2s;
+  border-left: 24px solid transparent;
+  border-right: 24px solid transparent;
+  border-bottom: 24px solid #3B82F6;
+  margin-bottom: -1px;
 }
 
 /* Тело */
 .body {
-  width: 40px;
-  height: 34px;
-  background: #f0f9ff;
-  border: 2px solid #007CDD;
-  border-top: none;
-  border-radius: 0 0 4px 4px;
+  width: 48px;
+  height: 36px;
+  background: #FFFFFF;
+  border: 3px solid #3B82F6;
+  border-radius: 4px;
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  gap: 4px;
-  padding-bottom: 2px;
-  transition: border-color 0.2s, background 0.2s;
 }
 
-.door {
-  width: 12px;
-  height: 18px;
-  background: #005fb3;
-  border-radius: 0 0 2px 2px;
-}
-
+/* Окно */
 .window {
-  width: 12px;
-  height: 12px;
-  background: #e0f2fe;
-  border: 2px solid #007CDD;
+  width: 14px;
+  height: 14px;
+  background: #3B82F6;
   border-radius: 2px;
+  margin-bottom: 4px;
 }
 
-/* 🎚️ Слайдер */
-.slider {
+/* Дверь */
+.door {
+  width: 14px;
+  height: 14px;
+  background: #3B82F6;
+  border-radius: 2px 2px 0 0;
+  margin-bottom: -3px;
+}
+
+/* Стрелочка вниз */
+.arrow {
+  width: 0; 
+  height: 0; 
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 10px solid #3B82F6;
+  margin-top: -2px;
+}
+
+/* 🎚️ Кастомный слайдер */
+.custom-slider {
+  -webkit-appearance: none;
   width: 100%;
-  max-width: 400px;
-  height: 6px;
-  background: #e5e7eb;
-  border-radius: 3px;
+  height: 8px; /* Толщина полосы */
+  border-radius: 4px;
   outline: none;
   cursor: pointer;
+  background: #E0F2FE; /* Цвет пустой части */
 }
 
-.slider::-webkit-slider-thumb {
+/* Бегунок (Скрываем стандартный, так как у нас есть домик) */
+.custom-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 22px;
-  height: 22px;
-  background: #007CDD;
-  border: 3px solid white;
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  cursor: grab;
-  transition: transform 0.1s;
+  appearance: none;
+  width: 0;
+  height: 0;
+  opacity: 0;
 }
 
-.slider::-webkit-slider-thumb:active {
-  cursor: grabbing;
-  transform: scale(1.15);
-}
-
-.slider::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  background: #007CDD;
-  border: 3px solid white;
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  cursor: grab;
+.custom-slider::-moz-range-thumb {
+  width: 0;
+  height: 0;
   border: none;
+  opacity: 0;
 }
 
-/* 🔢 Блок управления */
-.value-controls {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
+/* 🔢 Крупное значение */
 .value-display {
   display: flex;
-  align-items: baseline;
-  gap: 4px;
-  font-weight: 600;
-  color: #1f2937;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .value-number {
-  font-size: 1.75rem;
+  font-size: 64px; /* Огромная цифра */
+  font-weight: 800;
+  color: #3B82F6;
   line-height: 1;
 }
 
 .value-unit {
-  font-size: 1rem;
-  color: #6b7280;
-  font-weight: 400;
+  font-size: 24px;
+  font-weight: 600;
+  color: #93C5FD;
+  margin-bottom: 12px;
 }
 
-/* ✏️ Инпут */
-.input-wrapper {
+/* ✏️ Поле ручного ввода */
+.input-row {
+  width: 100%;
+  max-width: 300px;
+}
+
+.manual-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 18px;
+  text-align: center;
+  color: #111827;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.manual-input:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+/* =========================================
+   7. FOOTER (Стандартный)
+   ========================================= */
+.sheet-footer {
+  border-radius: 0 0 8px 8px;
+  z-index: 1;
+  height: 80px;
+  background-color: #F0F9FF;
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: #f9fafb;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 6px 12px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  justify-content: space-between;
+  padding: 0 50px;
+  flex-shrink: 0;
 }
 
-.input-wrapper:focus-within {
-  border-color: #007CDD;
-  box-shadow: 0 0 0 3px rgba(0,124,221,0.15);
-}
-
-.number-input {
-  width: 70px;
+.nav-btn {
+  background: none;
   border: none;
-  background: transparent;
-  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
   font-weight: 600;
-  color: #1f2937;
-  text-align: right;
-  outline: none;
+  color: #111827;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: background 0.2s;
 }
 
-.number-input::-webkit-outer-spin-button,
-.number-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
+.nav-btn:hover { background: rgba(0, 0, 0, 0.05); }
 
-.input-unit {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 400;
-}
-
-/* 💡 Подсказка */
-.range-hint {
-  font-size: 0.875rem;
-  color: #9ca3af;
-  text-align: center;
-}
-
-.hint-custom {
-  display: block;
-  color: #ef4444;
-  font-weight: 500;
-  margin-top: 2px;
-}
-
-/* 📱 Адаптив */
-@media (max-width: 480px) {
-  .value-controls {
-    flex-direction: column;
-    gap: 8px;
+/* =========================================
+   АДАПТИВ
+   ========================================= */
+@media (max-width: 768px) {
+  .quiz-sheet {
+    height: 100vh;
+    width: 100vw;
+    border-radius: 0;
+    max-height: none;
   }
-  .value-number { font-size: 1.5rem; }
-  .house-wrapper { height: 80px; }
-  .slider { max-width: 100%; }
+  .quiz-sheet__shadow-layer { display: none; }
+  .sheet-header { padding: 25px 20px 15px; }
+  .sheet-title { font-size: 24px; }
+  .progress-bar { left: 20px; width: 150px !important; }
+  .sheet-body { padding: 20px; }
+  
+  .value-number { font-size: 48px; }
+  .value-unit { font-size: 18px; }
+  
+  .house { transform: translateX(-50%) scale(0.8); } /* Уменьшаем домик на мобилках */
+  
+  .sheet-footer { padding: 0 20px; height: 70px; }
+  .nav-btn { font-size: 18px; }
 }
 </style>
