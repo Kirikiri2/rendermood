@@ -26,12 +26,12 @@ const isDragging = ref(false)
 onMounted(() => {
   const qId = questionId.value
   const answer = store.answers[qId]
-  
+
   // 🔒 Проверка: selected существует и это число
   const selected = answer?.selected
   if (typeof selected === 'number') {
     selectedId.value = selected
-    
+
     // 🔒 Безопасный поиск: проверяем, что опция существует
     const foundIndex = options.value.findIndex((opt) => opt?.id === selected)
     if (foundIndex >= 0) {
@@ -82,10 +82,10 @@ const handleTouchMove = (e: TouchEvent) => {
 const handleTouchEnd = () => {
   if (!isDragging.value) return
   isDragging.value = false
-  
+
   const diff = touchStartX.value - touchEndX.value
   const threshold = 50
-  
+
   if (Math.abs(diff) > threshold) {
     if (diff > 0) {
       nextSlide()
@@ -114,7 +114,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
     }
   }
 }
-
+const isEmpty = computed(() => selectedId.value === null)
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
 })
@@ -134,13 +134,13 @@ const handleImageError = (e: Event) => {
 <template>
   <!-- 1. ЗАТЕМНЕННЫЙ ФОН (Оверлей) -->
   <div class="quiz-overlay">
-    
+
     <!-- 2. БЛАНК -->
     <div class="quiz-sheet">
-      
+
       <!-- ЭФФЕКТ ДВОЙНОЙ КАРТОЧКИ -->
       <div class="quiz-sheet__shadow-layer"></div>
-      
+
       <!-- ВЕРХНЯЯ ЧАСТЬ -->
       <header class="sheet-header">
         <div class="progress-bar"></div>
@@ -151,37 +151,24 @@ const handleImageError = (e: Event) => {
       <main class="sheet-body">
         <!-- Горизонтальный скролл с фото -->
         <div class="carousel-scroll">
-          <div 
-            v-for="(option, index) in question.options"
-            :key="option.id"
-            class="carousel-item"
-            :class="{ 'carousel-item--selected': option.id === selectedId }"
-            @click="selectOption(option.id)"
-          >
+          <div v-for="(option, index) in question.options" :key="option.id" class="carousel-item"
+            :class="{ 'carousel-item--selected': option.id === selectedId }" @click="selectOption(option.id, index)">
             <div class="slide-content">
               <!-- Изображение -->
               <div class="image-wrapper">
-                <img
-                  v-if="option.imageUrl"
-                  :src="option.imageUrl"
-                  :alt="option.text"
-                  class="slide-image"
-                  loading="lazy"
-                />
+                <img v-if="option.imageUrl" :src="option.imageUrl" :alt="option.text" class="slide-image"
+                  loading="lazy" />
                 <div v-else class="slide-placeholder">
                   <span>Нет фото</span>
                 </div>
-                
+
                 <!-- Оверлей при выборе -->
-                <div 
-                  class="image-overlay" 
-                  :class="{ 'image-overlay--selected': option.id === selectedId }"
-                ></div>
+                <div class="image-overlay" :class="{ 'image-overlay--selected': option.id === selectedId }"></div>
 
                 <!-- Галочка -->
                 <div v-if="option.id === selectedId" class="checkmark">
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
               </div>
@@ -198,8 +185,8 @@ const handleImageError = (e: Event) => {
         <Transition name="slide">
           <p v-if="isEmpty" class="validation-msg">
             <svg class="icon-warn" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             Выберите один вариант
           </p>
@@ -208,23 +195,15 @@ const handleImageError = (e: Event) => {
 
       <!-- ПОДВАЛ (Навигация) -->
       <footer class="sheet-footer">
-        <button 
-          type="button" 
-          class="nav-btn btn-back"
-          @click="store.prevStep"
-          :disabled="store.currentStep === 0" 
-          :style="{ opacity: store.currentStep === 0 ? 0.5 : 1, cursor: store.currentStep === 0 ? 'default' : 'pointer' }"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <button type="button" class="nav-btn btn-back" @click="store.prevStep" :disabled="store.currentStep === 0"
+          :style="{ opacity: store.currentStep === 0 ? 0.5 : 1, cursor: store.currentStep === 0 ? 'default' : 'pointer' }">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
         </button>
 
-        <button 
-          type="button" 
-          class="nav-btn btn-next"
-          :class="{ 'btn-disabled': isEmpty }"
-          :disabled="isEmpty"
-          @click="store.nextStep"
-        >
+        <button type="button" class="nav-btn btn-next" :class="{ 'btn-disabled': isEmpty }" :disabled="isEmpty"
+          @click="store.nextStep">
           Далее
         </button>
       </footer>
@@ -239,8 +218,10 @@ const handleImageError = (e: Event) => {
    ========================================= */
 .quiz-overlay {
   position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
@@ -274,8 +255,10 @@ const handleImageError = (e: Event) => {
    ========================================= */
 .quiz-sheet__shadow-layer {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: #B3D4F0;
   border-radius: 8px;
   transform: translate(20px, 20px);
@@ -297,7 +280,8 @@ const handleImageError = (e: Event) => {
 
 .progress-bar {
   position: absolute;
-  top: 20px; left: 50px;
+  top: 20px;
+  left: 50px;
   width: 250px;
   height: 6px;
   background: #3B82F6;
@@ -325,14 +309,24 @@ const handleImageError = (e: Event) => {
   flex-direction: column;
   background: #FFFFFF;
   gap: 20px;
-  
+
   scrollbar-width: thin;
   scrollbar-color: #CBD5E1 #F1F5F9;
 }
 
-.sheet-body::-webkit-scrollbar { width: 8px; }
-.sheet-body::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 4px; }
-.sheet-body::-webkit-scrollbar-thumb { background-color: #94A3B8; border-radius: 4px; }
+.sheet-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sheet-body::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-radius: 4px;
+}
+
+.sheet-body::-webkit-scrollbar-thumb {
+  background-color: #94A3B8;
+  border-radius: 4px;
+}
 
 /* =========================================
    6. CAROUSEL SCROLL (ГОРИЗОНТАЛЬНЫЙ СКРОЛЛ)
@@ -345,15 +339,18 @@ const handleImageError = (e: Event) => {
   scroll-behavior: smooth;
   padding: 10px 5px 20px;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; /* Скрыть скроллбар Firefox */
+  scrollbar-width: none;
+  /* Скрыть скроллбар Firefox */
 }
 
 .carousel-scroll::-webkit-scrollbar {
-  display: none; /* Скрыть скроллбар Chrome/Safari */
+  display: none;
+  /* Скрыть скроллбар Chrome/Safari */
 }
 
 .carousel-item {
-  flex: 0 0 280px; /* Фиксированная ширина карточки */
+  flex: 0 0 280px;
+  /* Фиксированная ширина карточки */
   scroll-snap-align: center;
   cursor: pointer;
   opacity: 0.6;
@@ -505,20 +502,33 @@ const handleImageError = (e: Event) => {
   transition: background 0.2s;
 }
 
-.nav-btn:hover { background: rgba(0, 0, 0, 0.05); }
+.nav-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
 
 .nav-btn.btn-disabled {
   opacity: 0.5;
   cursor: not-allowed;
   color: #9CA3AF;
 }
-.nav-btn.btn-disabled:hover { background: none; }
+
+.nav-btn.btn-disabled:hover {
+  background: none;
+}
 
 /* =========================================
    9. ANIMATIONS
    ========================================= */
-.slide-enter-active, .slide-leave-active { transition: all 0.3s ease; }
-.slide-enter-from, .slide-leave-to { opacity: 0; transform: translateY(-10px); }
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
 
 /* =========================================
    АДАПТИВ
@@ -530,25 +540,46 @@ const handleImageError = (e: Event) => {
     border-radius: 0;
     max-height: none;
   }
-  
-  .quiz-sheet__shadow-layer { display: none; }
-  .sheet-header { padding: 25px 20px 15px; }
-  .sheet-title { font-size: 22px; }
-  .progress-bar { left: 20px; width: 150px !important; }
-  .sheet-body { padding: 20px; }
-  
-  .carousel-item {
-    flex: 0 0 240px; /* Меньше на мобильных */
+
+  .quiz-sheet__shadow-layer {
+    display: none;
   }
-  
-  .image-wrapper { height: 280px; }
-  .slide-title { font-size: 16px; }
-  
+
+  .sheet-header {
+    padding: 25px 20px 15px;
+  }
+
+  .sheet-title {
+    font-size: 22px;
+  }
+
+  .progress-bar {
+    left: 20px;
+    width: 150px !important;
+  }
+
+  .sheet-body {
+    padding: 20px;
+  }
+
+  .carousel-item {
+    flex: 0 0 240px;
+    /* Меньше на мобильных */
+  }
+
+  .image-wrapper {
+    height: 280px;
+  }
+
+  .slide-title {
+    font-size: 16px;
+  }
+
   .sheet-footer {
     padding: 0 20px;
     height: 70px;
   }
-  
+
   .nav-btn {
     font-size: 17px;
     padding: 8px 14px;
@@ -557,15 +588,34 @@ const handleImageError = (e: Event) => {
 
 @media (max-width: 374px) {
   .carousel-item {
-    flex: 0 0 200px; /* Ещё меньше на маленьких экранах */
+    flex: 0 0 200px;
+    /* Ещё меньше на маленьких экранах */
   }
-  
-  .image-wrapper { height: 240px; }
-  .slide-title { font-size: 14px; }
-  
-  .sheet-header { padding: 20px 15px 12px; }
-  .sheet-title { font-size: 18px; }
-  .sheet-footer { padding: 0 15px; height: 60px; }
-  .nav-btn { font-size: 15px; padding: 6px 12px; }
+
+  .image-wrapper {
+    height: 240px;
+  }
+
+  .slide-title {
+    font-size: 14px;
+  }
+
+  .sheet-header {
+    padding: 20px 15px 12px;
+  }
+
+  .sheet-title {
+    font-size: 18px;
+  }
+
+  .sheet-footer {
+    padding: 0 15px;
+    height: 60px;
+  }
+
+  .nav-btn {
+    font-size: 15px;
+    padding: 6px 12px;
+  }
 }
 </style>

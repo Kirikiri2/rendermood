@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Question } from '@/shared/quiz'
 import { useQuizStore } from '@/stores/quizStore'
+import { computed } from 'vue';
 
 const props = defineProps<{
   question: Question
@@ -13,18 +14,21 @@ const update = (e: Event) => {
   const target = e.target as HTMLInputElement
   store.setCustomInput(props.question.id, target.value)
 }
+const isEmpty = computed(() => {
+  return !props.answer || props.answer.trim().length === 0
+})
 </script>
 
 <template>
   <!-- 1. ЗАТЕМНЕННЫЙ ФОН (Оверлей) -->
   <div class="quiz-overlay">
-    
+
     <!-- 2. БЛАНК -->
     <div class="quiz-sheet">
-      
+
       <!-- ЭФФЕКТ ДВОЙНОЙ КАРТОЧКИ -->
       <div class="quiz-sheet__shadow-layer"></div>
-      
+
       <!-- ВЕРХНЯЯ ЧАСТЬ -->
       <header class="sheet-header">
         <div class="progress-bar"></div>
@@ -34,36 +38,21 @@ const update = (e: Event) => {
       <!-- СКРОЛЛИРУЕМАЯ ЗОНА -->
       <main class="sheet-body">
         <div class="input-container">
-          <input
-            :value="answer"
-            @input="update"
-            type="text"
-            class="main-input"
-            placeholder="Введите стиль"
-            autofocus
-          />
+          <input :value="answer" @input="update" type="text" class="main-input" placeholder="Введите стиль" autofocus />
         </div>
       </main>
 
       <!-- ПОДВАЛ (Навигация) -->
       <footer class="sheet-footer">
-        <button 
-          type="button" 
-          class="nav-btn btn-back"
-          @click="store.prevStep"
-          :disabled="store.currentStep === 0" 
-          :style="{ opacity: store.currentStep === 0 ? 0.5 : 1, cursor: store.currentStep === 0 ? 'default' : 'pointer' }"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <button type="button" class="nav-btn btn-back" @click="store.prevStep" :disabled="store.currentStep === 0"
+          :style="{ opacity: store.currentStep === 0 ? 0.5 : 1, cursor: store.currentStep === 0 ? 'default' : 'pointer' }">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
         </button>
 
-        <button 
-          type="button" 
-          class="nav-btn btn-next"
-          :class="{ 'btn-disabled': isEmpty }"
-          :disabled="isEmpty"
-          @click="store.nextStep"
-        >
+        <button type="button" class="nav-btn btn-next" :class="{ 'btn-disabled': isEmpty }" :disabled="isEmpty"
+          @click="store.nextStep">
           Далее
         </button>
       </footer>
@@ -78,8 +67,10 @@ const update = (e: Event) => {
    ========================================= */
 .quiz-overlay {
   position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
@@ -111,8 +102,10 @@ const update = (e: Event) => {
    ========================================= */
 .quiz-sheet__shadow-layer {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: #B3D4F0;
   border-radius: 5px;
   transform: translate(20px, 20px);
@@ -134,7 +127,8 @@ const update = (e: Event) => {
 
 .progress-bar {
   position: absolute;
-  top: 20px; left: 50px;
+  top: 20px;
+  left: 50px;
   width: 600px;
   height: 6px;
   background: #3B82F6;
@@ -160,14 +154,24 @@ const update = (e: Event) => {
   display: flex;
   flex-direction: column;
   background: #FFFFFF;
-  
+
   scrollbar-width: thin;
   scrollbar-color: #CBD5E1 #F1F5F9;
 }
 
-.sheet-body::-webkit-scrollbar { width: 8px; }
-.sheet-body::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 4px; }
-.sheet-body::-webkit-scrollbar-thumb { background-color: #94A3B8; border-radius: 4px; }
+.sheet-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sheet-body::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-radius: 4px;
+}
+
+.sheet-body::-webkit-scrollbar-thumb {
+  background-color: #94A3B8;
+  border-radius: 4px;
+}
 
 /* =========================================
    6. INPUT CONTAINER (Центрирование)
@@ -236,20 +240,33 @@ const update = (e: Event) => {
   transition: background 0.2s;
 }
 
-.nav-btn:hover { background: rgba(0, 0, 0, 0.05); }
+.nav-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
 
 .nav-btn.btn-disabled {
   opacity: 0.5;
   cursor: not-allowed;
   color: #9CA3AF;
 }
-.nav-btn.btn-disabled:hover { background: none; }
+
+.nav-btn.btn-disabled:hover {
+  background: none;
+}
 
 /* =========================================
    8. ANIMATIONS
    ========================================= */
-.slide-enter-active, .slide-leave-active { transition: all 0.3s ease; }
-.slide-enter-from, .slide-leave-to { opacity: 0; transform: translateY(-10px); }
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
 
 /* =========================================
    АДАПТИВ
@@ -261,9 +278,15 @@ const update = (e: Event) => {
     max-height: 90vh;
     max-width: 1100px;
   }
-  
-  .sheet-title { font-size: 26px; }
-  .main-input { font-size: 20px; padding: 20px 28px; }
+
+  .sheet-title {
+    font-size: 26px;
+  }
+
+  .main-input {
+    font-size: 20px;
+    padding: 20px 28px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -272,13 +295,28 @@ const update = (e: Event) => {
     width: 100vw;
     border-radius: 0;
   }
-  
-  .quiz-sheet__shadow-layer { display: none; }
-  .sheet-header { padding: 30px 20px 15px; }
-  .sheet-title { font-size: 22px; }
-  .progress-bar { left: 20px; width: 150px !important; }
-  .sheet-body { padding: 30px 20px; }
-  
+
+  .quiz-sheet__shadow-layer {
+    display: none;
+  }
+
+  .sheet-header {
+    padding: 30px 20px 15px;
+  }
+
+  .sheet-title {
+    font-size: 22px;
+  }
+
+  .progress-bar {
+    left: 20px;
+    width: 150px !important;
+  }
+
+  .sheet-body {
+    padding: 30px 20px;
+  }
+
   .main-input {
     font-size: 18px;
     padding: 18px 24px;
@@ -289,7 +327,7 @@ const update = (e: Event) => {
     padding: 0 20px;
     height: 70px;
   }
-  
+
   .nav-btn {
     font-size: 18px;
     padding: 8px 16px;
